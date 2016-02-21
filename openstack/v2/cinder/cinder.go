@@ -21,15 +21,12 @@ import (
 	"strings"
 
 	"github.com/rackspace/gophercloud"
-	"github.com/rackspace/gophercloud/openstack"
 
 	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
 	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2"
 	volumesintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2/volumes"
 	snapshotsintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2/snapshots"
 	limitsintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/limits"
-
-
 )
 
 // ServiceV2 serves as dispatcher for Cinder API version 2.0
@@ -94,13 +91,12 @@ func (s ServiceV2) GetVolumes(provider *gophercloud.ProviderClient) (types.Volum
 func (s ServiceV2) GetSnapshots(provider *gophercloud.ProviderClient) (types.Snapshots, error) {
 	snaps := types.Snapshots{}
 
-	client, err := openstack.NewBlockStorageV1(provider, gophercloud.EndpointOpts{})
+	client, err := openstackintel.NewBlockStorageV2(provider, gophercloud.EndpointOpts{})
 	if err != nil {
 		return snaps, err
 	}
 
 	opts := snapshotsintel.ListOpts{}
-
 	pager := snapshotsintel.List(client, opts)
 	page, err := pager.AllPages()
 	if err != nil {

@@ -31,6 +31,7 @@ import (
 	str "github.com/intelsdi-x/snap-plugin-utilities/strings"
 
 	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
+	"github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/services"
 	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack"
 
 )
@@ -223,7 +224,7 @@ func Meta() *plugin.PluginMeta {
 type collector struct {
 	host    string
 	tenants *str.StringSet
-	service openstackintel.Service
+	service services.Service
 	//provider  *gophercloud.ProviderClient
 	providers map[string]*gophercloud.ProviderClient
 }
@@ -246,7 +247,7 @@ func (c *collector) authenticate(cfg interface{}, tenant string) error {
 	}
 	// set provider and dispatch API version based on priority
 	c.providers[tenant] = provider
-	c.service = openstackintel.Dispatch(provider)
+	c.service = services.Dispatch(provider)
 
 	return nil
 }

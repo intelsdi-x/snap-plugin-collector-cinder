@@ -102,6 +102,7 @@ func ExtractVolumesMeta(page pagination.Page) ([]VolumeMeta, error) {
 	}
 
 	err := mapstructure.Decode(page.(ListResult).Body, &response)
+
 	return response.VolumesMeta, err
 }
 

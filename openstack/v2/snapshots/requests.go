@@ -17,6 +17,7 @@ package snapshots
 import (
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/pagination"
+	"fmt"
 )
 
 // ListOptsBuilder allows extensions to add additional parameters to the List
@@ -53,7 +54,7 @@ func List(client *gophercloud.ServiceClient, opts ListOptsBuilder) pagination.Pa
 		}
 		url += query
 	}
-
+	fmt.Println("snapshot urls = ", url)
 	createPage := func(r pagination.PageResult) pagination.Page {
 		return ListResult{pagination.SinglePageBase(r)}
 	}
