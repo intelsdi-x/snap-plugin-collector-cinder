@@ -19,12 +19,11 @@ package cinder
 import (
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
-	"github.com/rackspace/gophercloud/openstack/blockstorage/v1/volumes"
 	"github.com/rackspace/gophercloud/openstack/blockstorage/v1/snapshots"
+	"github.com/rackspace/gophercloud/openstack/blockstorage/v1/volumes"
 
 	limitsintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/limits"
 	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
-
 )
 
 // ServiceV1 serves as dispatcher for Cinder API version 1.0
@@ -72,7 +71,6 @@ func (s ServiceV1) GetVolumes(provider *gophercloud.ProviderClient) (types.Volum
 	if err != nil {
 		return vols, err
 	}
-
 
 	for _, volume := range volumeList {
 		vols.Count += 1

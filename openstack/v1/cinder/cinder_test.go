@@ -1,3 +1,5 @@
+// +build unit
+
 /*
 http://www.apache.org/licenses/LICENSE-2.0.txt
 Copyright 2016 Intel Corporation
@@ -16,11 +18,12 @@ package cinder
 
 import (
 	"fmt"
+	"net/http"
+	"testing"
+
 	th "github.com/rackspace/gophercloud/testhelper"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/suite"
-	"net/http"
-	"testing"
 
 	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack"
 )
@@ -34,7 +37,7 @@ type CinderV1Suite struct {
 	Vol1, Vol2                               string
 	Vol1Size, Vol2Size                       int
 	Token                                    string
-	SnapShotSize int
+	SnapShotSize                             int
 }
 
 func (s *CinderV1Suite) SetupSuite() {
@@ -130,7 +133,6 @@ func (s *CinderV1Suite) TestGetSnapshots() {
 		})
 	})
 }
-
 
 func registerRoot() {
 	th.Mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

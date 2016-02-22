@@ -19,10 +19,10 @@ package services
 import (
 	"github.com/rackspace/gophercloud"
 
-	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
+	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack"
 	cinderv1 "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v1/cinder"
 	cinderv2 "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2/cinder"
-	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack"
+	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
 )
 
 // Cinderer allows usage of different Cinder API versions for metric collection
@@ -59,7 +59,8 @@ func (s Service) GetSnapshots(provider *gophercloud.ProviderClient) (types.Snaps
 
 // Dispatch redirects to selected Cinder API version based on priority
 func Dispatch(provider *gophercloud.ProviderClient) Service {
-	versions, err := openstackintel.GetApiVersions(provider)
+	cmn := openstackintel.Common{}
+	versions, err := cmn.GetApiVersions(provider)
 	if err != nil {
 		panic(err)
 	}

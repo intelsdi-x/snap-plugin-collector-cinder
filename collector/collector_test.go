@@ -2,7 +2,7 @@
 
 /*
 http://www.apache.org/licenses/LICENSE-2.0.txt
-Copyright 2016 Intel Corporation
+Copyright 2015 Intel Corporation
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,36 +14,46 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cinder
+package collector
 
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	th "github.com/rackspace/gophercloud/testhelper"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack"
+	"github.com/intelsdi-x/snap/control/plugin"
+	"github.com/intelsdi-x/snap/core/cdata"
+	"github.com/intelsdi-x/snap/core/ctypes"
+
+	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
+	str "github.com/intelsdi-x/snap-plugin-utilities/strings"
+	"github.com/rackspace/gophercloud"
 )
 
-type CinderV2Suite struct {
+type CollectorSuite struct {
 	suite.Suite
-	MaxTotalVolumeGigabytes, MaxTotalVolumes int
+	Token                                    string
 	V1, V2                                   string
-	LimitsV1, LimitsV2                       string
-	VolMeta                                  string
+	LimitsV2                                 string
+	Tenant1, Tenant2                         string
+	MaxTotalVolumeGigabytes, MaxTotalVolumes int
 	Vol1, Vol2                               string
 	Vol1Size, Vol2Size                       int
-	Token                                    string
+	VolMeta                                  string
 	SnapShotSize                             int
 }
 
-func (s *CinderV2Suite) SetupSuite() {
+func (s *CollectorSuite) SetupSuite() {
 	th.SetupHTTP()
 	registerRoot()
 	registerAuthentication(s)
+	registerTenants(s, "1fffff", "2eeeee")
 	registerLimits(s)
 	registerVolMeta(s)
 	s.Vol1Size = 11
@@ -54,88 +64,144 @@ func (s *CinderV2Suite) SetupSuite() {
 	registerSnapshots(s, s.SnapShotSize)
 }
 
-func (suite *CinderV2Suite) TearDownSuite() {
+func (s *CollectorSuite) TearDownSuite() {
 	th.TeardownHTTP()
 }
 
-func TestRunSuite(t *testing.T) {
-	cinderTestSuite := new(CinderV2Suite)
-	suite.Run(t, cinderTestSuite)
-}
+func (s *CollectorSuite) TestGetMetricTypes() {
+	Convey("Given config with enpoint, user and password defined", s.T(), func() {
+		cfg := setupCfg(th.Endpoint(), "me", "secret")
 
-func (s *CinderV2Suite) TestGetLimits() {
-	Convey("Given Cinder absolute limits are requested", s.T(), func() {
+		Convey("When GetMetricTypes() is called", func() {
+			collector := New()
+			mts, err := collector.GetMetricTypes(cfg)
 
-		Convey("When authentication is required", func() {
-			provider, err := openstackintel.Authenticate(th.Endpoint(), "me", "secret", "tenant")
-			th.AssertNoErr(s.T(), err)
-			th.CheckEquals(s.T(), s.Token, provider.TokenID)
+			Convey("Then no error should be reported", func() {
+				So(err, ShouldBeNil)
+			})
 
-			Convey("and GetLimits called", func() {
-				dispatch := ServiceV2{}
-				limits, err := dispatch.GetLimits(provider)
+			Convey("and proper metric types are returned", func() {
+				metricNames := []string{}
+				for _, m := range mts {
+					metricNames = append(metricNames, strings.Join(m.Namespace(), "/"))
+				}
 
-				Convey("Then proper limits values are returned", func() {
-					So(limits.MaxTotalVolumes, ShouldEqual, s.MaxTotalVolumes)
-					So(limits.MaxTotalVolumeGigabytes, ShouldEqual, s.MaxTotalVolumeGigabytes)
-				})
-
-				Convey("and no error reported", func() {
-					So(err, ShouldBeNil)
-				})
+				So(len(mts), ShouldEqual, 12)
+				So(str.Contains(metricNames, "intel/openstack/cinder/test_tenant/snapshots/count"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/test_tenant/snapshots/bytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/test_tenant/volumes/count"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/test_tenant/volumes/bytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/test_tenant/limits/MaxTotalVolumeGigabytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/test_tenant/limits/MaxTotalVolumes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/admin/volumes/count"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/admin/volumes/bytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/admin/limits/MaxTotalVolumeGigabytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/admin/limits/MaxTotalVolumes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/admin/snapshots/count"), ShouldBeTrue)
+				So(str.Contains(metricNames, "intel/openstack/cinder/admin/snapshots/bytes"), ShouldBeTrue)
 			})
 		})
 	})
 }
 
-func (s *CinderV2Suite) TestGetVolumes() {
-	Convey("Given Cinder volumes are requested", s.T(), func() {
+//func (s *CollectorSuite) TestCollectMetrics() {
+//	Convey("Given set of metric types", s.T(), func() {
+//		cfg := setupCfg(th.Endpoint(), "me", "secret")
+//		m1 := plugin.PluginMetricType{
+//			Namespace_: []string{"intel", "openstack", "cinder", "demo", "limits", "MaxTotalVolumeGigabytes"},
+//			Config_: cfg.ConfigDataNode}
+//		//m2 := plugin.PluginMetricType{
+//		//	Namespace_: []string{"intel", "openstack", "cinder", "demo", "volumes", "count"},
+//		//	Config_: &cfg.ConfigDataNode}
+//		//m3 := plugin.PluginMetricType{
+//		//	Namespace_: []string{"intel", "openstack", "cinder", "demo", "snapshots", "bytes"},
+//		//	Config_: &cfg.ConfigDataNode}
+//		//
+//
+//
+//		servMock := ServicesMock{}
+//		limits := types.Limits{
+//			MaxTotalVolumeGigabytes: 333,
+//			MaxTotalVolumes: 111,
+//		}
+//		servMock.On("GetLimits", mock.AnythingOfType("*gophercloud.ProviderClient")).Return(limits, nil)
+//
+//
+//		cmnMock := CommonMock{}
+//		tenants := []types.Tenant{types.Tenant{ID: "1fffff", Name: "demo"}}
+//		cmnMock.On("GetTenants", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(tenants, nil)
+//		cmnMock.On("GetApiVersions", mock.AnythingOfType("*gophercloud.ProviderClient")).Return([]string{"v1.0", "v2.0"}, nil)
+//
+//		Convey("When ColelctMetrics() is called", func() {
+//			collector := New()
+//
+//			collector.common = cmnMock
+//			collector.service = servMock
+//
+//			mts, err := collector.CollectMetrics([]plugin.PluginMetricType{m1})
+//
+//			Convey("Then no error should be reported", func() {
+//				So(err, ShouldBeNil)
+//			})
+//
+//			Convey("and proper metric types are returned", func() {
+//				metricNames := map[string]interface{}{}
+//				for _, m := range mts {
+//					ns := strings.Join(m.Namespace(), "/")
+//					metricNames[ns] = m.Data()
+//				}
+//
+//				So(len(mts), ShouldEqual, 1)
+//
+//			})
+//		})
+//	})
+//}
 
-		Convey("When authentication is required", func() {
-			provider, err := openstackintel.Authenticate(th.Endpoint(), "me", "secret", "tenant")
-			th.AssertNoErr(s.T(), err)
-			th.CheckEquals(s.T(), s.Token, provider.TokenID)
-
-			Convey("and GetVolumes called", func() {
-				dispatch := ServiceV2{}
-				volumes, err := dispatch.GetVolumes(provider)
-
-				Convey("Then proper limits values are returned", func() {
-					So(volumes.Count, ShouldEqual, 2)
-					So(volumes.Bytes, ShouldEqual, s.Vol1Size+s.Vol2Size)
-				})
-
-				Convey("and no error reported", func() {
-					So(err, ShouldBeNil)
-				})
-			})
-		})
-	})
+func TestCollectorSuite(t *testing.T) {
+	collectorTestSuite := new(CollectorSuite)
+	suite.Run(t, collectorTestSuite)
 }
 
-func (s *CinderV2Suite) TestGetSnapshots() {
-	Convey("Given Cinder snapshots are requested", s.T(), func() {
+type ServicesMock struct {
+	mock.Mock
+}
 
-		Convey("When authentication is required", func() {
-			provider, err := openstackintel.Authenticate(th.Endpoint(), "me", "secret", "tenant")
-			th.AssertNoErr(s.T(), err)
-			th.CheckEquals(s.T(), s.Token, provider.TokenID)
+func (servMock ServicesMock) GetLimits(provider *gophercloud.ProviderClient) (types.Limits, error) {
+	ret := servMock.Mock.Called(provider)
+	return ret.Get(0).(types.Limits), ret.Error(1)
+}
 
-			Convey("and GetSnapshots called", func() {
-				dispatch := ServiceV2{}
-				snapshots, err := dispatch.GetSnapshots(provider)
+func (servMock ServicesMock) GetVolumes(provider *gophercloud.ProviderClient) (types.Volumes, error) {
+	ret := servMock.Mock.Called(provider)
+	return ret.Get(0).(types.Volumes), ret.Error(1)
+}
 
-				Convey("Then proper limits values are returned", func() {
-					So(snapshots.Count, ShouldEqual, 1)
-					So(snapshots.Bytes, ShouldEqual, s.SnapShotSize)
-				})
+func (servMock ServicesMock) GetSnapshots(provider *gophercloud.ProviderClient) (types.Snapshots, error) {
+	ret := servMock.Mock.Called(provider)
+	return ret.Get(0).(types.Snapshots), ret.Error(1)
+}
 
-				Convey("and no error reported", func() {
-					So(err, ShouldBeNil)
-				})
-			})
-		})
-	})
+type CommonMock struct {
+	mock.Mock
+}
+
+func (cmnMock CommonMock) GetTenants(endpoint, user, password string) ([]types.Tenant, error) {
+	ret := cmnMock.Mock.Called(endpoint, user, password)
+	return ret.Get(0).([]types.Tenant), ret.Error(1)
+}
+
+func (cmnMock CommonMock) GetApiVersions(provider *gophercloud.ProviderClient) ([]string, error) {
+	ret := cmnMock.Mock.Called(provider)
+	return ret.Get(0).([]string), ret.Error(1)
+}
+
+func setupCfg(endpoint, user, password string) plugin.PluginConfigType {
+	node := cdata.NewNode()
+	node.AddItem("endpoint", ctypes.ConfigValueStr{Value: endpoint})
+	node.AddItem("user", ctypes.ConfigValueStr{Value: user})
+	node.AddItem("password", ctypes.ConfigValueStr{Value: password})
+	return plugin.PluginConfigType{ConfigDataNode: node}
 }
 
 func registerRoot() {
@@ -165,7 +231,7 @@ func registerRoot() {
 	})
 }
 
-func registerAuthentication(s *CinderV2Suite) {
+func registerAuthentication(s *CollectorSuite) {
 	s.V1 = "v1/v1ffff"
 	s.V2 = "v2/v2ffff"
 	s.Token = "2ed210f132564f21b178afb197ee99e3"
@@ -234,7 +300,39 @@ func registerAuthentication(s *CinderV2Suite) {
 	})
 }
 
-func registerLimits(s *CinderV2Suite) {
+func registerTenants(s *CollectorSuite, tenant1 string, tenant2 string) {
+	s.Tenant1 = tenant1
+	s.Tenant2 = tenant2
+	th.Mux.HandleFunc("/v2.0/tenants", func(w http.ResponseWriter, r *http.Request) {
+		th.TestMethod(s.T(), r, "GET")
+		th.TestHeader(s.T(), r, "X-Auth-Token", s.Token)
+
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		fmt.Fprintf(w, `
+			{
+				"tenants": [
+					{
+						"description": "Test tenat",
+						"enabled": true,
+						"id": "%s",
+						"name": "test_tenant"
+					},
+					{
+						"description": "admin tenant",
+						"enabled": true,
+						"id": "%s",
+						"name": "admin"
+					}
+				],
+				"tenants_links": []
+			}
+		`, s.Tenant1, s.Tenant2)
+	})
+}
+
+func registerLimits(s *CollectorSuite) {
 	s.LimitsV2 = "/" + s.V2 + "/limits"
 	s.MaxTotalVolumeGigabytes = 1000
 	s.MaxTotalVolumes = 10
@@ -261,7 +359,7 @@ func registerLimits(s *CinderV2Suite) {
 	})
 }
 
-func registerVolMeta(s *CinderV2Suite) {
+func registerVolMeta(s *CollectorSuite) {
 	s.VolMeta = "/" + s.V2 + "/volumes"
 	s.Vol1 = s.V2 + "/volumes/vol1cccc"
 	s.Vol2 = s.V2 + "/volumes/vol2cccc"
@@ -309,7 +407,7 @@ func registerVolMeta(s *CinderV2Suite) {
 
 }
 
-func registerVolume(s *CinderV2Suite, volID string, volSize int) {
+func registerVolume(s *CollectorSuite, volID string, volSize int) {
 	th.Mux.HandleFunc("/"+volID, func(w http.ResponseWriter, r *http.Request) {
 		th.TestMethod(s.T(), r, "GET")
 		th.TestHeader(s.T(), r, "X-Auth-Token", s.Token)
@@ -373,7 +471,7 @@ func registerVolume(s *CinderV2Suite, volID string, volSize int) {
 
 }
 
-func registerSnapshots(s *CinderV2Suite, snapSize int) {
+func registerSnapshots(s *CollectorSuite, snapSize int) {
 	snapshots := "/" + s.V2 + "/snapshots"
 	th.Mux.HandleFunc(snapshots, func(w http.ResponseWriter, r *http.Request) {
 		th.TestMethod(s.T(), r, "GET")

@@ -34,28 +34,18 @@ var apiPriority = map[string]int{
 	"v2.0": 2,
 }
 
-// Authenticate is used to authenticate user for given tenant. Request is send to provided Keystone endpoint
-// Returns authenticated provider client, which is used as a base for service clients.
-func Authenticate(endpoint, user, password, tenant string) (*gophercloud.ProviderClient, error) {
-	authOpts := gophercloud.AuthOptions{
-		IdentityEndpoint: endpoint,
-		Username:         user,
-		Password:         password,
-		TenantName:       tenant,
-		AllowReauth:      true,
-	}
-
-	provider, err := openstack.AuthenticatedClient(authOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	return provider, nil
+// Commoner provides abstraction for shared functions mainly for mocking
+type Commoner interface {
+	GetTenants(endpoint, user, password string) ([]types.Tenant, error)
+	GetApiVersions(provider *gophercloud.ProviderClient) ([]string, error)
 }
+
+// Common is a receiver for Commoner interface
+type Common struct{}
 
 // GetTenants is used to retrieve list of available tenant for authenticated user
 // List of tenants can then be used to authenticate user for each given tenant
-func GetTenants(endpoint, user, password string) ([]types.Tenant, error) {
+func (c Common) GetTenants(endpoint, user, password string) ([]types.Tenant, error) {
 	tnts := []types.Tenant{}
 
 	provider, err := Authenticate(endpoint, user, password, "")
@@ -87,7 +77,7 @@ func GetTenants(endpoint, user, password string) ([]types.Tenant, error) {
 
 // GetApiVersions is used to retrieve list of available Cinder API versions
 // List of api version is then used to dispatch calls to proper API version based on defined priority
-func GetApiVersions(provider *gophercloud.ProviderClient) ([]string, error) {
+func (c Common) GetApiVersions(provider *gophercloud.ProviderClient) ([]string, error) {
 	apis := []string{}
 
 	client, err := openstackintel.NewBlockStorageV2(provider, gophercloud.EndpointOpts{})
@@ -99,6 +89,7 @@ func GetApiVersions(provider *gophercloud.ProviderClient) ([]string, error) {
 	pager := apiversionsintel.List(client)
 	page, err := pager.AllPages()
 	if err != nil {
+		fmt.Println("err ", err)
 		return apis, err
 	}
 
@@ -112,6 +103,25 @@ func GetApiVersions(provider *gophercloud.ProviderClient) ([]string, error) {
 	}
 
 	return apis, nil
+}
+
+// Authenticate is used to authenticate user for given tenant. Request is send to provided Keystone endpoint
+// Returns authenticated provider client, which is used as a base for service clients.
+func Authenticate(endpoint, user, password, tenant string) (*gophercloud.ProviderClient, error) {
+	authOpts := gophercloud.AuthOptions{
+		IdentityEndpoint: endpoint,
+		Username:         user,
+		Password:         password,
+		TenantName:       tenant,
+		AllowReauth:      true,
+	}
+
+	provider, err := openstack.AuthenticatedClient(authOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return provider, nil
 }
 
 // ChooseVersion returns chosen Cinder API version based on defined priority

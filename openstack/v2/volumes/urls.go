@@ -23,4 +23,3 @@ func createURL(c *gophercloud.ServiceClient) string {
 func listURL(c *gophercloud.ServiceClient) string {
 	return createURL(c)
 }
-

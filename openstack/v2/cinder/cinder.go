@@ -22,15 +22,15 @@ import (
 
 	"github.com/rackspace/gophercloud"
 
-	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
-	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2"
-	volumesintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2/volumes"
-	snapshotsintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2/snapshots"
 	limitsintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/limits"
+	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2"
+	snapshotsintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2/snapshots"
+	volumesintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2/volumes"
+	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
 )
 
 // ServiceV2 serves as dispatcher for Cinder API version 2.0
-type ServiceV2 struct {}
+type ServiceV2 struct{}
 
 // GetLimits collects tenant limits by sending REST call to cinderhost:8776/v2/tenant_id/limits
 func (s ServiceV2) GetLimits(provider *gophercloud.ProviderClient) (types.Limits, error) {

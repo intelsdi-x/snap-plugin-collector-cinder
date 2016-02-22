@@ -15,11 +15,11 @@ limitations under the License.
 package collector
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"strings"
-	"time"
 	"sync"
+	"time"
 
 	"github.com/rackspace/gophercloud"
 
@@ -30,10 +30,9 @@ import (
 	"github.com/intelsdi-x/snap-plugin-utilities/ns"
 	str "github.com/intelsdi-x/snap-plugin-utilities/strings"
 
-	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
-	"github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/services"
 	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack"
-
+	"github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/services"
+	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
 )
 
 const (
@@ -50,9 +49,9 @@ func New() *collector {
 	if err != nil {
 		host = "localhost"
 	}
-	tenants := str.StringSet{}
+
 	providers := map[string]*gophercloud.ProviderClient{}
-	return &collector{host: host, tenants: tenants.Init(), providers: providers}
+	return &collector{host: host, tenants: str.InitSet(), providers: providers}
 }
 
 // GetMetricTypes returns list of available metric types
@@ -69,7 +68,8 @@ func (c *collector) GetMetricTypes(cfg plugin.PluginConfigType) ([]plugin.Plugin
 	password := items["password"].(string)
 
 	// retrieve list of all available tenants for provided endpoint, user and password
-	allTenants, err := openstackintel.GetTenants(endpoint, user, password)
+	cmn := openstackintel.Common{}
+	allTenants, err := cmn.GetTenants(endpoint, user, password)
 	if err != nil {
 		return nil, err
 	}
@@ -223,31 +223,36 @@ func Meta() *plugin.PluginMeta {
 
 type collector struct {
 	host    string
-	tenants *str.StringSet
+	tenants str.StringSet
 	service services.Service
+	common  openstackintel.Commoner
 	//provider  *gophercloud.ProviderClient
 	providers map[string]*gophercloud.ProviderClient
 }
 
 func (c *collector) authenticate(cfg interface{}, tenant string) error {
+	if _, found := c.providers[tenant]; !found {
+		// get credentials and endpoint from configuration
+		items, err := config.GetConfigItems(cfg, []string{"endpoint", "user", "password"})
+		if err != nil {
+			return err
+		}
 
-	// get credentials and endpoint from configuration
-	items, err := config.GetConfigItems(cfg, []string{"endpoint", "user", "password"})
-	if err != nil {
-		return err
+		endpoint := items["endpoint"].(string)
+		user := items["user"].(string)
+		password := items["password"].(string)
+
+		provider, err := openstackintel.Authenticate(endpoint, user, password, tenant)
+		if err != nil {
+			return err
+		}
+		// set provider and dispatch API version based on priority
+		c.providers[tenant] = provider
+		c.service = services.Dispatch(provider)
+
+		// set Commoner interface
+		c.common = openstackintel.Common{}
 	}
-
-	endpoint := items["endpoint"].(string)
-	user := items["user"].(string)
-	password := items["password"].(string)
-
-	provider, err := openstackintel.Authenticate(endpoint, user, password, tenant)
-	if err != nil {
-		return err
-	}
-	// set provider and dispatch API version based on priority
-	c.providers[tenant] = provider
-	c.service = services.Dispatch(provider)
 
 	return nil
 }

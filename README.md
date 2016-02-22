@@ -1,8 +1,6 @@
 # snap-plugin-collector-cinder
 
 snap plugin for collecting metrics from OpenStack Cinder module. 
-It collects metrics by communicating with OpenStack by REST API.
-It can be used in- as well as out-of-bands.
 
 1. [Getting Started](#getting-started)
   * [System Requirements](#system-requirements)
@@ -19,11 +17,12 @@ It can be used in- as well as out-of-bands.
 ## Getting Started
 
 Plugin collects metrics by communicating with OpenStack by REST API.
-It can be used in- as well as out-of-bands.
+It can be used in- as well as out-of-bands. It is suggested
 
 ### System Requirements
 
  - Linux
+ - OpenStack deployment available
 
 ### Installation
 #### Download <cinder> plugin binary:
@@ -55,14 +54,22 @@ intel/openstack/cinder/\<tenant_name\>/snapshots/bytes | Total number of bytes u
 intel/openstack/cinder/\<tenant_name\>/limits/MaxTotalVolumeGigabytes | Tenant quota for volume size
 intel/openstack/cinder/\<tenant_name\>/limits/MaxTotalVolumes | Tenant quota for number of volumes
 
+### snap's Global Config
+Global configuration files are described in snap's documentation. You have to add section "cinder" in "collector" section and then specify following options:
+-  `"endpoint"` - URL for OpenStack Identity endpoint aka Keystone (ex. `"http://keystone.public.org:5000"`)
+- `"user"` -  user name which has access to OpenStack
+- `"password"` : user password 
+
 ### Examples
+It is not suggested to set interval below 20 seconds. This may lead to overloading Keystone with authentication requests. 
+
 Example task manifest to use <cinder> plugin:
 ```
 {
     "version": 1,
     "schedule": {
         "type": "simple",
-        "interval": "5s"
+        "interval": "60s"
     },
     "workflow": {
         "collect": {

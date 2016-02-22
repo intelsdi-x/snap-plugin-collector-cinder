@@ -15,13 +15,13 @@ limitations under the License.
 package volumes
 
 import (
-    "github.com/rackspace/gophercloud"
-    "github.com/rackspace/gophercloud/pagination"
-    "github.com/mitchellh/mapstructure"
+	"github.com/mitchellh/mapstructure"
+	"github.com/rackspace/gophercloud"
+	"github.com/rackspace/gophercloud/pagination"
 )
 
 // Volume contains information associated with an OpenStack Volume
-type Volume struct{
+type Volume struct {
 	// Current status of the volume.
 	Status string `mapstructure:"status"`
 
@@ -70,10 +70,9 @@ type Volume struct{
 
 // Volume contains information associated with an OpenStack Volume metadata
 type VolumeMeta struct {
-	ID string `mapstructure:"id"`
-	Links []map[string]interface{}  `mapstructure:"links"`
-	Name string `mapstructure:"name"`
-
+	ID    string                   `mapstructure:"id"`
+	Links []map[string]interface{} `mapstructure:"links"`
+	Name  string                   `mapstructure:"name"`
 }
 
 // GetResult contains the response body and error from a Get request.

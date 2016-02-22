@@ -20,8 +20,8 @@ import (
 	"net/url"
 
 	"github.com/rackspace/gophercloud"
-	"github.com/rackspace/gophercloud/pagination"
 	"github.com/rackspace/gophercloud/openstack/blockstorage/v1/apiversions"
+	"github.com/rackspace/gophercloud/pagination"
 )
 
 // Exactly the same as original, but kept here to achieve proper call to modified listURL() until PR is merged
