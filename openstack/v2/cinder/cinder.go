@@ -81,7 +81,7 @@ func (s ServiceV2) GetVolumes(provider *gophercloud.ProviderClient) (types.Volum
 			panic(err)
 		}
 		vols.Count += 1
-		vols.Bytes += volume.Size
+		vols.Bytes += volume.Size * 1024 * 1024 * 1024
 	}
 
 	return vols, nil
@@ -110,7 +110,7 @@ func (s ServiceV2) GetSnapshots(provider *gophercloud.ProviderClient) (types.Sna
 
 	for _, snapshot := range snapshotList {
 		snaps.Count += 1
-		snaps.Bytes += snapshot.Size
+		snaps.Bytes += snapshot.Size * 1024 * 1024 * 1024
 	}
 
 	return snaps, nil
