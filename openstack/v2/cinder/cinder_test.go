@@ -102,7 +102,7 @@ func (s *CinderV2Suite) TestGetVolumes() {
 
 				Convey("Then proper limits values are returned", func() {
 					So(volumes.Count, ShouldEqual, 2)
-					So(volumes.Bytes, ShouldEqual, s.Vol1Size+s.Vol2Size)
+					So(volumes.Bytes, ShouldEqual, (s.Vol1Size+s.Vol2Size)* 1024 * 1024 * 1024)
 				})
 
 				Convey("and no error reported", func() {
@@ -127,7 +127,7 @@ func (s *CinderV2Suite) TestGetSnapshots() {
 
 				Convey("Then proper limits values are returned", func() {
 					So(snapshots.Count, ShouldEqual, 1)
-					So(snapshots.Bytes, ShouldEqual, s.SnapShotSize)
+					So(snapshots.Bytes, ShouldEqual, s.SnapShotSize * 1024 * 1024 * 1024)
 				})
 
 				Convey("and no error reported", func() {
