@@ -19,6 +19,7 @@ if [[ $TEST_SUITE == "unit" ]]; then
 	go get github.com/smartystreets/goconvey/convey
 	go get golang.org/x/tools/cmd/cover
 	go get github.com/stretchr/testify
+	go get github.com/gorilla/mux
 
 
 	COVERALLS_TOKEN=t47LG6BQsfLwb9WxB56hXUezvwpED6D11
