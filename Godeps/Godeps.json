@@ -1,0 +1,24 @@
+{
+	"ImportPath": "github.com/intelsdi-x/snap-plugin-collector-cinder",
+	"GoVersion": "go1.5",
+	"Deps": [
+		{
+			"ImportPath": "github.com/intelsdi-x/snap-plugin-utilities",
+			"Rev": "7e9b5175465bb8d095c9a7ad4ced57e5c376efd0"
+		},
+		{
+			"ImportPath": "github.com/mitchellh/mapstructure",
+			"Rev": "281073eb9eb092240d33ef253c404f1cca550309"
+		},
+		{
+			"ImportPath": "github.com/oleiade/reflections",
+			"Comment": "0.1.2-2-g632977f",
+			"Rev": "632977f98cd34d217c4b57d0840ec188b3d3dcaf"
+		},
+		{
+			"ImportPath": "github.com/rackspace/gophercloud",
+			"Comment": "v1.0.0-804-g14c8801",
+			"Rev": "3be69380c314f60d981425ff95a36aecdb9d820a"
+		}
+	]
+}
