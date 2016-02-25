@@ -17,7 +17,7 @@ snap plugin for collecting metrics from OpenStack Cinder module.
 ## Getting Started
 
 Plugin collects metrics by communicating with OpenStack by REST API.
-It can be used in- as well as out-of-bands. It is suggested
+It can be used in- as well as out-of-bands. 
 
 ### System Requirements
 
@@ -25,14 +25,14 @@ It can be used in- as well as out-of-bands. It is suggested
  - OpenStack deployment available
 
 ### Installation
-#### Download <cinder> plugin binary:
+#### Download cinder plugin binary:
 You can get the pre-built binaries for your OS and architecture at snap's [Github Releases](https://github.com/intelsdi-x/snap/releases) page.
 
 #### To build the plugin binary:
-Fork https://github.com/intelsdi-x/snap-plugin-collector-<cinder>
+Fork https://github.com/intelsdi-x/snap-plugin-collector-cinder
 Clone repo into `$GOPATH/src/github/intelsdi-x/`:
 ```
-$ git clone https://github.com/<yourGithubID>/snap-plugin-collector-<cinder>
+$ git clone https://github.com/<yourGithubID>/snap-plugin-collector-cinder
 ```
 Build the plugin by running make in repo:
 ```
@@ -47,23 +47,23 @@ This plugin has the ability to gather the following metrics:
 
 Namespace | Data Type | Description (optional)
 ----------|-----------|-----------------------
-intel/openstack/cinder/\<tenant_name\>/volumes/count | Total number of OpenStack volumes for given tenant
-intel/openstack/cinder/\<tenant_name\>/volumes/bytes | Total number of bytes used by OpenStack volumes for given tenant
-intel/openstack/cinder/\<tenant_name\>/snapshots/count | Total number of OpenStack volumes snapshots for given tenant
-intel/openstack/cinder/\<tenant_name\>/snapshots/bytes | Total number of bytes used by OpenStack volumes snapshots for given tenant
-intel/openstack/cinder/\<tenant_name\>/limits/MaxTotalVolumeGigabytes | Tenant quota for volume size
-intel/openstack/cinder/\<tenant_name\>/limits/MaxTotalVolumes | Tenant quota for number of volumes
+intel/openstack/cinder/\<tenant_name\>/volumes/count | int | Total number of OpenStack volumes for given tenant
+intel/openstack/cinder/\<tenant_name\>/volumes/bytes | int  | Total number of bytes used by OpenStack volumes for given tenant
+intel/openstack/cinder/\<tenant_name\>/snapshots/count | int | Total number of OpenStack volumes snapshots for given tenant
+intel/openstack/cinder/\<tenant_name\>/snapshots/bytes | int | Total number of bytes used by OpenStack volumes snapshots for given tenant
+intel/openstack/cinder/\<tenant_name\>/limits/MaxTotalVolumeGigabytes | int64 | Tenant quota for volume size
+intel/openstack/cinder/\<tenant_name\>/limits/MaxTotalVolumes | int64 | Tenant quota for number of volumes
 
 ### snap's Global Config
 Global configuration files are described in snap's documentation. You have to add section "cinder" in "collector" section and then specify following options:
--  `"endpoint"` - URL for OpenStack Identity endpoint aka Keystone (ex. `"http://keystone.public.org:5000"`)
+- `"endpoint"` - URL for OpenStack Identity endpoint aka Keystone (ex. `"http://keystone.public.org:5000"`)
 - `"user"` -  user name which has access to OpenStack
-- `"password"` : user password 
+- `"password"` -  user password 
 
 ### Examples
-It is not suggested to set interval below 20 seconds. This may lead to overloading Keystone with authentication requests. 
+It is recommended to set interval above 20 seconds. This may lead to overloading Keystone with authentication requests. 
 
-Example task manifest to use <cinder> plugin:
+Example task manifest to use cinder plugin:
 ```
 {
     "version": 1,

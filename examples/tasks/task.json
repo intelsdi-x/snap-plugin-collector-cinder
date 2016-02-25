@@ -8,10 +8,10 @@
         "collect": {
             "metrics": {
 		        "/intel/openstack/cinder/demo/limits/MaxTotalVolumeGigabytes": {},
-		        "/intel/openstack/cinder/demo/volumes/count": {},
-		        "/intel/openstack/cinder/demo/volumes/bytes": {},
-		        "/intel/openstack/cinder/demo/snapshots/count": {},
-		        "/intel/openstack/cinder/demo/snapshots/bytes": {}
+		        "/intel/openstack/cinder/demo/volumes/Count": {},
+		        "/intel/openstack/cinder/demo/volumes/Bytes": {},
+		        "/intel/openstack/cinder/demo/snapshots/Count": {},
+		        "/intel/openstack/cinder/demo/snapshots/Bytes": {}
            },
             "config": {
             },
