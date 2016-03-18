@@ -22,14 +22,16 @@ import (
 
 // Snapshot contains information associated with an OpenStack Snapshot.
 type Snapshot struct {
-	Created     string                 `mapstructure:"created_at"`
-	Description string                 `mapstructure:"description"`
-	ID          string                 `mapstructure:"id"`
-	Meta        map[string]interface{} `mapstructure:"metadata"`
-	Name        string                 `mapstructure:"name"`
-	Status      string                 `mapstructure:"status"`
-	Size        int                    `mapstructure:"size"`
-	VolumeID    string                 `mapstructure:"volume_id"`
+	Created                               string                 `mapstructure:"created_at"`
+	Description                           string                 `mapstructure:"description"`
+	ID                                    string                 `mapstructure:"id"`
+	Meta                                  map[string]interface{} `mapstructure:"metadata"`
+	Name                                  string                 `mapstructure:"name"`
+	OsExtendedSnapshotAttributesProgress  string                 `mapstructure:"os-extended-snapshot-attributes:progress"`
+	OsExtendedSnapshotAttributesProjectID string                 `mapstructure:"os-extended-snapshot-attributes:project_id"`
+	Status                                string                 `mapstructure:"status"`
+	Size                                  int                    `mapstructure:"size"`
+	VolumeID                              string                 `mapstructure:"volume_id"`
 }
 
 // GetResult contains the response body and error from a Get request.

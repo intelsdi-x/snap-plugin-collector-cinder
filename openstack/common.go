@@ -26,7 +26,6 @@ import (
 
 	apiversionsintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/apiversions"
 	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/v2"
-	"github.com/intelsdi-x/snap-plugin-collector-cinder/types"
 )
 
 var apiPriority = map[string]int{
@@ -36,7 +35,7 @@ var apiPriority = map[string]int{
 
 // Commoner provides abstraction for shared functions mainly for mocking
 type Commoner interface {
-	GetTenants(endpoint, user, password string) ([]types.Tenant, error)
+	GetTenants(endpoint, user, password string) (map[string]string, error)
 	GetApiVersions(provider *gophercloud.ProviderClient) ([]string, error)
 }
 
@@ -45,8 +44,8 @@ type Common struct{}
 
 // GetTenants is used to retrieve list of available tenant for authenticated user
 // List of tenants can then be used to authenticate user for each given tenant
-func (c Common) GetTenants(endpoint, user, password string) ([]types.Tenant, error) {
-	tnts := []types.Tenant{}
+func (c Common) GetTenants(endpoint, user, password string) (map[string]string, error) {
+	tnts := map[string]string{}
 
 	provider, err := Authenticate(endpoint, user, password, "")
 	if err != nil {
@@ -69,7 +68,7 @@ func (c Common) GetTenants(endpoint, user, password string) ([]types.Tenant, err
 	}
 
 	for _, t := range tenantList {
-		tnts = append(tnts, types.Tenant{Name: t.Name, ID: t.ID})
+		tnts[t.ID] = t.Name
 	}
 
 	return tnts, nil

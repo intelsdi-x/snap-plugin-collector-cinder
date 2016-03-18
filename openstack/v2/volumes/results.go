@@ -66,13 +66,39 @@ type Volume struct {
 
 	// User ID
 	UserID string `mapstructure:"user_id"`
-}
 
-// Volume contains information associated with an OpenStack Volume metadata
-type VolumeMeta struct {
-	ID    string                   `mapstructure:"id"`
-	Links []map[string]interface{} `mapstructure:"links"`
-	Name  string                   `mapstructure:"name"`
+	// If true volume is encrypted
+	Encrypted bool `json:"encrypted" mapstructure:"encrypted"`
+
+	// Volume links
+	Links []map[string]interface{} `json:"links" mapstructure:"links"`
+
+	// If true, this volume can attach to more than one instance.
+	MultiAttach bool `json:"multiattach" mapstructure:"multiattach"`
+
+	// The UUID of the consistency group
+	ConsistencyGroupId string `json:"consistencygroup_id" mapstructure:"consistencygroup_id"`
+
+	// Current back-end of the volume
+	OsVolHostAttrHost string `json:"os-vol-host-attr:host" mapstructure:"os-vol-host-attr:host"`
+
+	// The status of this volume migratio
+	OsVolMigStatusAttrMigstat string `json:"os-vol-mig-status-attr:migstat" mapstructure:"os-vol-mig-status-attr:migstat"`
+
+	// The volume ID that this volume name on the back-end is based on
+	OsVolMigStatusAttrNameID string `json:"os-vol-mig-status-attr:name_id" mapstructure:"os-vol-mig-status-attr:name_id"`
+
+	// The tenant ID which the volume belongs to
+	OsVolTenantAttrTenantID string `json:"os-vol-tenant-attr:tenant_id" mapstructure:"os-vol-tenant-attr:tenant_id"`
+
+	// The name of the volume replication driver
+	OsVolumeReplicationDriverData string `json:"os-volume-replication:driver_data" mapstructure:"os-volume-replication:driver_data"`
+
+	// The volume replication status managed by the driver of backend storage
+	OsVolumeReplicationExtendedStatus string `json:"os-volume-replication:extended_status" mapstructure:"os-volume-replication:extended_status"`
+
+	// The volume replication status
+	ReplicationStatus string `json:"replication_status" mapstructure:"replication_status"`
 }
 
 // GetResult contains the response body and error from a Get request.
@@ -87,7 +113,7 @@ type ListResult struct {
 
 // IsEmpty returns true if a ListResult contains no Volumes.
 func (r ListResult) IsEmpty() (bool, error) {
-	volumes, err := ExtractVolumesMeta(r)
+	volumes, err := ExtractVolumes(r)
 	if err != nil {
 		return true, err
 	}
@@ -95,14 +121,14 @@ func (r ListResult) IsEmpty() (bool, error) {
 }
 
 // ExtractVolumes extracts and returns Volumes. It is used while iterating over a volumes.List call.
-func ExtractVolumesMeta(page pagination.Page) ([]VolumeMeta, error) {
+func ExtractVolumes(page pagination.Page) ([]Volume, error) {
 	var response struct {
-		VolumesMeta []VolumeMeta `mapstructure:"volumes"`
+		Volumes []Volume `mapstructure:"volumes"`
 	}
 
 	err := mapstructure.Decode(page.(ListResult).Body, &response)
 
-	return response.VolumesMeta, err
+	return response.Volumes, err
 }
 
 // Extract will get the Volume object out of the commonResult object.

@@ -18,8 +18,6 @@ limitations under the License.
 package cinder
 
 import (
-	"strings"
-
 	"github.com/rackspace/gophercloud"
 
 	limitsintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/limits"
@@ -52,51 +50,48 @@ func (s ServiceV2) GetLimits(provider *gophercloud.ProviderClient) (types.Limits
 	return limits, nil
 }
 
-// GetVolumes collects volumes data by sending REST call to cinderhost:8776/v2/tenant_id/volumes
-func (s ServiceV2) GetVolumes(provider *gophercloud.ProviderClient) (types.Volumes, error) {
-	vols := types.Volumes{}
+// GetVolumes collects volumes data by sending REST call to cinderhost:8776/v2/tenant_id/volumes/detail?all_tenants=true
+func (s ServiceV2) GetVolumes(provider *gophercloud.ProviderClient) (map[string]types.Volumes, error) {
+	vols := map[string]types.Volumes{}
 
 	client, err := openstackintel.NewBlockStorageV2(provider, gophercloud.EndpointOpts{})
 	if err != nil {
-		return vols, err
+		return nil, err
 	}
 
-	opts := volumesintel.ListOpts{}
+	opts := volumesintel.ListOpts{AllTenants: true}
 
 	pager := volumesintel.List(client, opts)
 	page, err := pager.AllPages()
 	if err != nil {
-		return vols, err
+		return nil, err
 	}
 
-	volumesMeta, err := volumesintel.ExtractVolumesMeta(page)
+	volumes, err := volumesintel.ExtractVolumes(page)
 	if err != nil {
-		return vols, err
+		return nil, err
 	}
 
-	for _, volumeMeta := range volumesMeta {
-		volURL := client.ResourceBaseURL() + strings.Join([]string{"volumes", volumeMeta.ID}, "/")
-		volume, err := volumesintel.Get(client, volURL).Extract()
-		if err != nil {
-			panic(err)
-		}
-		vols.Count += 1
-		vols.Bytes += volume.Size * 1024 * 1024 * 1024
+	for _, volume := range volumes {
+		volCounts := vols[volume.OsVolTenantAttrTenantID]
+		volCounts.Count += 1
+		volCounts.Bytes += volume.Size * 1024 * 1024 * 1024
+		vols[volume.OsVolTenantAttrTenantID] = volCounts
 	}
 
 	return vols, nil
 }
 
-// GetSnapshots collects snapshot data by sending REST call to cinderhost:8776/v2/tenant_id/snapshots
-func (s ServiceV2) GetSnapshots(provider *gophercloud.ProviderClient) (types.Snapshots, error) {
-	snaps := types.Snapshots{}
+// GetSnapshots collects snapshot data by sending REST call to cinderhost:8776/v2/tenant_id/snapshots/detail?all_tenants=true
+func (s ServiceV2) GetSnapshots(provider *gophercloud.ProviderClient) (map[string]types.Snapshots, error) {
+	snaps := map[string]types.Snapshots{}
 
 	client, err := openstackintel.NewBlockStorageV2(provider, gophercloud.EndpointOpts{})
 	if err != nil {
 		return snaps, err
 	}
 
-	opts := snapshotsintel.ListOpts{}
+	opts := snapshotsintel.ListOpts{AllTenants: true}
 	pager := snapshotsintel.List(client, opts)
 	page, err := pager.AllPages()
 	if err != nil {
@@ -109,8 +104,10 @@ func (s ServiceV2) GetSnapshots(provider *gophercloud.ProviderClient) (types.Sna
 	}
 
 	for _, snapshot := range snapshotList {
-		snaps.Count += 1
-		snaps.Bytes += snapshot.Size * 1024 * 1024 * 1024
+		snapCounts := snaps[snapshot.OsExtendedSnapshotAttributesProjectID]
+		snapCounts.Count += 1
+		snapCounts.Bytes += snapshot.Size * 1024 * 1024 * 1024
+		snaps[snapshot.OsExtendedSnapshotAttributesProjectID] = snapCounts
 	}
 
 	return snaps, nil

@@ -28,9 +28,10 @@ type ListOptsBuilder interface {
 // ListOpts hold options for listing Snapshots. It is passed to the
 // snapshots.List function.
 type ListOpts struct {
-	Name     string `q:"display_name"`
-	Status   string `q:"status"`
-	VolumeID string `q:"volume_id"`
+	Name       string `q:"display_name"`
+	Status     string `q:"status"`
+	VolumeID   string `q:"volume_id"`
+	AllTenants bool   `q:"all_tenants"`
 }
 
 // ToSnapshotListQuery formats a ListOpts into a query string.

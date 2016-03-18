@@ -28,8 +28,8 @@ import (
 // Cinderer allows usage of different Cinder API versions for metric collection
 type Cinderer interface {
 	GetLimits(provider *gophercloud.ProviderClient) (types.Limits, error)
-	GetVolumes(provider *gophercloud.ProviderClient) (types.Volumes, error)
-	GetSnapshots(provider *gophercloud.ProviderClient) (types.Snapshots, error)
+	GetVolumes(provider *gophercloud.ProviderClient) (map[string]types.Volumes, error)
+	GetSnapshots(provider *gophercloud.ProviderClient) (map[string]types.Snapshots, error)
 }
 
 // Services serves as a API calls dispatcher
@@ -48,12 +48,12 @@ func (s Service) GetLimits(provider *gophercloud.ProviderClient) (types.Limits, 
 }
 
 // GetVolumes dispatches call to proper API version calls to collect volumes metrics
-func (s Service) GetVolumes(provider *gophercloud.ProviderClient) (types.Volumes, error) {
+func (s Service) GetVolumes(provider *gophercloud.ProviderClient) (map[string]types.Volumes, error) {
 	return s.cinder.GetVolumes(provider)
 }
 
 // GetSnapshots dispatches call to proper API version calls to collect snapshot metrics
-func (s Service) GetSnapshots(provider *gophercloud.ProviderClient) (types.Snapshots, error) {
+func (s Service) GetSnapshots(provider *gophercloud.ProviderClient) (map[string]types.Snapshots, error) {
 	return s.cinder.GetSnapshots(provider)
 }
 

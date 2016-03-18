@@ -17,7 +17,7 @@ package snapshots
 import "github.com/rackspace/gophercloud"
 
 func createURL(c *gophercloud.ServiceClient) string {
-	return c.ServiceURL("snapshots")
+	return c.ServiceURL("snapshots", "detail")
 }
 
 func listURL(c *gophercloud.ServiceClient) string {

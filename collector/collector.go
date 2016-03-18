@@ -1,6 +1,6 @@
 /*
 http://www.apache.org/licenses/LICENSE-2.0.txt
-Copyright 2015 Intel Corporation
+Copyright 2016 Intel Corporation
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -51,7 +51,14 @@ func New() *collector {
 	}
 
 	providers := map[string]*gophercloud.ProviderClient{}
-	return &collector{host: host, tenants: str.InitSet(), providers: providers}
+	allTenants := map[string]string{}
+	allLimits := map[string]types.Limits{}
+	return &collector{
+		host:       host,
+		allTenants: allTenants,
+		providers:  providers,
+		allLimits:  allLimits,
+	}
 }
 
 // GetMetricTypes returns list of available metric types
@@ -69,21 +76,21 @@ func (c *collector) GetMetricTypes(cfg plugin.PluginConfigType) ([]plugin.Plugin
 
 	// retrieve list of all available tenants for provided endpoint, user and password
 	cmn := openstackintel.Common{}
-	allTenants, err := cmn.GetTenants(endpoint, user, password)
+	c.allTenants, err = cmn.GetTenants(endpoint, user, password)
 	if err != nil {
 		return nil, err
 	}
 
 	// Generate available namespace for limits
 	namespaces := []string{}
-	for _, tenant := range allTenants {
+	for _, tenantName := range c.allTenants {
 		// Construct temporary struct to generate namespace based on tags
 		var metrics struct {
 			S types.Snapshots `json:"snapshots"`
 			V types.Volumes   `json:"volumes"`
 			L types.Limits    `json:"limits"`
 		}
-		current := strings.Join([]string{vendor, fs, name, tenant.Name}, "/")
+		current := strings.Join([]string{vendor, fs, name, tenantName}, "/")
 		ns.FromCompositionTags(metrics, current, &namespaces)
 	}
 
@@ -100,8 +107,16 @@ func (c *collector) GetMetricTypes(cfg plugin.PluginConfigType) ([]plugin.Plugin
 // CollectMetrics returns list of requested metric values
 // It returns error in case retrieval was not successful
 func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plugin.PluginMetricType, error) {
+	// get admin tenant from configuration. admin tenant is needed for gathering volumes and snapshots metrics at once
+	item, err := config.GetConfigItem(metricTypes[0], "tenant")
+	if err != nil {
+		return nil, err
+	}
+	admin := item.(string)
+
 	// iterate over metric types to resolve needed collection calls
 	// for requested tenants
+	collectTenants := str.InitSet()
 	var collectLimits, collectVolumes, collectSnapshots bool
 	for _, metricType := range metricTypes {
 		namespace := metricType.Namespace()
@@ -110,7 +125,7 @@ func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plu
 		}
 
 		tenant := namespace[3]
-		c.tenants.Add(tenant)
+		collectTenants.Add(tenant)
 
 		if str.Contains(namespace, "limits") {
 			collectLimits = true
@@ -121,58 +136,90 @@ func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plu
 		}
 	}
 
-	allLimits := map[string]types.Limits{}
 	allSnapshots := map[string]types.Snapshots{}
 	allVolumes := map[string]types.Volumes{}
 
-	for _, tenant := range c.tenants.Elements() {
-		if err := c.authenticate(metricTypes[0], tenant); err != nil {
+	// collect volumes and snapshots separately by authenticating to admin
+	{
+		if err := c.authenticate(metricTypes[0], admin); err != nil {
 			return nil, err
 		}
-
-		provider := c.providers[tenant]
+		provider := c.providers[admin]
 
 		var done sync.WaitGroup
-		// Collect limits
-		if collectLimits {
-			done.Add(1)
-			go func() {
-				limits, err := c.service.GetLimits(provider)
-				if err != nil {
-					panic(err)
-				}
-				allLimits[tenant] = limits
-				done.Done()
-			}()
-		}
+		errChn := make(chan error, 2)
 
 		// Collect volumes
 		if collectVolumes {
 			done.Add(1)
 			go func() {
+				defer done.Done()
 				volumes, err := c.service.GetVolumes(provider)
 				if err != nil {
-					panic(err)
+					errChn <- err
 				}
-				allVolumes[tenant] = volumes
-				done.Done()
+				for tenantId, volumeCount := range volumes {
+					tenantName := c.allTenants[tenantId]
+					allVolumes[tenantName] = volumeCount
+				}
 			}()
 		}
-
 		// Collect snapshots
 		if collectSnapshots {
 			done.Add(1)
 			go func() {
+				defer done.Done()
 				snapshots, err := c.service.GetSnapshots(provider)
 				if err != nil {
-					panic(err)
+					errChn <- err
 				}
-				allSnapshots[tenant] = snapshots
-				done.Done()
+				for tenantId, snapshotCount := range snapshots {
+					tenantName := c.allTenants[tenantId]
+					allSnapshots[tenantName] = snapshotCount
+				}
 			}()
 		}
 
 		done.Wait()
+		close(errChn)
+
+		if e := <-errChn; e != nil {
+			return nil, e
+		}
+	}
+
+	// Collect limits per each tenant only if not already collected (plugin lifetime scope)
+	{
+		var done sync.WaitGroup
+		errChn := make(chan error, collectTenants.Size())
+
+		for _, tenant := range collectTenants.Elements() {
+			_, found := c.allLimits[tenant]
+			if collectLimits && !found {
+				if err := c.authenticate(metricTypes[0], tenant); err != nil {
+					return nil, err
+				}
+
+				provider := c.providers[tenant]
+
+				done.Add(1)
+				go func(p *gophercloud.ProviderClient, t string) {
+					defer done.Done()
+					limits, err := c.service.GetLimits(p)
+					if err != nil {
+						errChn <- err
+					}
+					c.allLimits[t] = limits
+				}(provider, tenant)
+			}
+		}
+
+		done.Wait()
+		close(errChn)
+
+		if e := <-errChn; e != nil {
+			return nil, e
+		}
 	}
 
 	metrics := []plugin.PluginMetricType{}
@@ -187,7 +234,7 @@ func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plu
 		}{
 			allSnapshots[tenant],
 			allVolumes[tenant],
-			allLimits[tenant],
+			c.allLimits[tenant],
 		}
 
 		// Extract values by namespace from temporary struct and create metrics
@@ -218,16 +265,17 @@ func Meta() *plugin.PluginMeta {
 		plgtype,
 		[]string{plugin.SnapGOBContentType},
 		[]string{plugin.SnapGOBContentType},
+		plugin.RoutingStrategy(plugin.StickyRouting),
 	)
 }
 
 type collector struct {
-	host    string
-	tenants str.StringSet
-	service services.Service
-	common  openstackintel.Commoner
-	//provider  *gophercloud.ProviderClient
-	providers map[string]*gophercloud.ProviderClient
+	host       string
+	allTenants map[string]string
+	service    services.Service
+	common     openstackintel.Commoner
+	allLimits  map[string]types.Limits
+	providers  map[string]*gophercloud.ProviderClient
 }
 
 func (c *collector) authenticate(cfg interface{}, tenant string) error {

@@ -17,7 +17,7 @@ package volumes
 import "github.com/rackspace/gophercloud"
 
 func createURL(c *gophercloud.ServiceClient) string {
-	return c.ServiceURL("volumes")
+	return c.ServiceURL("volumes", "detail")
 }
 
 func listURL(c *gophercloud.ServiceClient) string {

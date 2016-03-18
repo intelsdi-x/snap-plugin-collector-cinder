@@ -17,12 +17,13 @@ snap plugin for collecting metrics from OpenStack Cinder module.
 ## Getting Started
 
 Plugin collects metrics by communicating with OpenStack by REST API.
-It can be used in- as well as out-of-bands. 
+It can run locally on the host, or in proxy mode (communicating with the host via HTTP(S)). 
 
 ### System Requirements
 
  - Linux
  - OpenStack deployment available
+ - Cinder V2 API
 
 ### Installation
 #### Download cinder plugin binary:
@@ -57,8 +58,9 @@ intel/openstack/cinder/\<tenant_name\>/limits/MaxTotalVolumes | int64 | Tenant q
 ### snap's Global Config
 Global configuration files are described in snap's documentation. You have to add section "cinder" in "collector" section and then specify following options:
 - `"endpoint"` - URL for OpenStack Identity endpoint aka Keystone (ex. `"http://keystone.public.org:5000"`)
-- `"user"` -  user name which has access to OpenStack
+- `"user"` -  user name which has access to OpenStack. It is highly prefer to provide user with administrative privileges. Otherwise returned metrics may not be complete.
 - `"password"` -  user password 
+- `"tenant"` - name of project admin project. This parameter is optional for global config. It can be provided at later stage, in task manifest configuration section for metrics. 
 
 ### Examples
 It is recommended to set interval above 20 seconds. This may lead to overloading Keystone with authentication requests. 
@@ -81,6 +83,9 @@ Example task manifest to use cinder plugin:
 		        "/intel/openstack/cinder/demo/snapshots/bytes": {}
            },
             "config": {
+                "/intel/openstack/cinder/": {
+                    "tenant": "admin"
+                }
             },
             "process": null,
             "publish": null
@@ -91,7 +96,10 @@ Example task manifest to use cinder plugin:
 
 
 ### Roadmap
-There isn't a current roadmap for this plugin, but it is in active development. As we launch this plugin, we do not have any outstanding requirements for the next release.
+There are few items on current roadmap for this plugin:
+- quotable Cinder resources like backups and consistency groups
+- number of volumes per volume type
+- support for Cinder V1 API
 
 ## Community Support
 This repository is one of **many** plugins in **snap**, a powerful telemetry framework. See the full project at http://github.com/intelsdi-x/snap To reach out to other users, head to the [main framework](https://github.com/intelsdi-x/snap#community-support)
