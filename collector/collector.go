@@ -65,18 +65,9 @@ func New() *collector {
 // It returns error in case retrieval was not successful
 func (c *collector) GetMetricTypes(cfg plugin.PluginConfigType) ([]plugin.PluginMetricType, error) {
 	mts := []plugin.PluginMetricType{}
-	items, err := config.GetConfigItems(cfg, []string{"endpoint", "user", "password"})
-	if err != nil {
-		return nil, err
-	}
 
-	endpoint := items["endpoint"].(string)
-	user := items["user"].(string)
-	password := items["password"].(string)
-
-	// retrieve list of all available tenants for provided endpoint, user and password
-	cmn := openstackintel.Common{}
-	c.allTenants, err = cmn.GetTenants(endpoint, user, password)
+	var err error
+	c.allTenants, err = getTenants(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +104,14 @@ func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plu
 		return nil, err
 	}
 	admin := item.(string)
+
+	// populate information about all available tenants
+	if len(c.allTenants) == 0 {
+		c.allTenants, err = getTenants(metricTypes[0])
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// iterate over metric types to resolve needed collection calls
 	// for requested tenants
@@ -155,6 +154,7 @@ func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plu
 			go func() {
 				defer done.Done()
 				volumes, err := c.service.GetVolumes(provider)
+
 				if err != nil {
 					errChn <- err
 				}
@@ -173,6 +173,7 @@ func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plu
 				if err != nil {
 					errChn <- err
 				}
+
 				for tenantId, snapshotCount := range snapshots {
 					tenantName := c.allTenants[tenantId]
 					allSnapshots[tenantName] = snapshotCount
@@ -303,4 +304,24 @@ func (c *collector) authenticate(cfg interface{}, tenant string) error {
 	}
 
 	return nil
+}
+
+func getTenants(cfg interface{}) (map[string]string, error) {
+	items, err := config.GetConfigItems(cfg, []string{"endpoint", "user", "password"})
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := items["endpoint"].(string)
+	user := items["user"].(string)
+	password := items["password"].(string)
+
+	// retrieve list of all available tenants for provided endpoint, user and password
+	cmn := openstackintel.Common{}
+	allTenants, err := cmn.GetTenants(endpoint, user, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return allTenants, nil
 }

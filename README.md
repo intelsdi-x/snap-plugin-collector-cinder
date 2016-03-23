@@ -99,6 +99,7 @@ Example task manifest to use cinder plugin:
 There are few items on current roadmap for this plugin:
 - quotable Cinder resources like backups and consistency groups
 - number of volumes per volume type
+- handling wildcard for tenant
 - support for Cinder V1 API
 
 ## Community Support

@@ -1,5 +1,3 @@
-// +build unit
-
 /*
 http://www.apache.org/licenses/LICENSE-2.0.txt
 Copyright 2016 Intel Corporation
@@ -38,20 +36,27 @@ type CinderV2Suite struct {
 	Vol1Size, Vol2Size                       int
 	Token                                    string
 	SnapShotSize                             int
+	Tenant1ID, Tenant2ID                     string
 }
 
 func (s *CinderV2Suite) SetupSuite() {
 	th.SetupHTTP()
 	registerRoot()
+	s.V1 = "v1/v1ffff"
+	s.V2 = "v2/v2ffff"
+	s.Token = "2ed210f132564f21b178afb197ee99e3"
 	registerAuthentication(s)
 	registerLimits(s)
-	registerVolMeta(s)
+
+	s.Tenant1ID = "admin_id123"
+	s.Tenant2ID = "demo_id123"
+	s.Vol1 = "vol1id_123"
+	s.Vol2 = "vol2id_321"
 	s.Vol1Size = 11
 	s.Vol2Size = 22
-	registerVolume(s, s.Vol1, 11)
-	registerVolume(s, s.Vol2, 22)
+	registerVolumes(s)
 	s.SnapShotSize = 5
-	registerSnapshots(s, s.SnapShotSize)
+	registerSnapshots(s)
 }
 
 func (suite *CinderV2Suite) TearDownSuite() {
@@ -101,8 +106,11 @@ func (s *CinderV2Suite) TestGetVolumes() {
 				volumes, err := dispatch.GetVolumes(provider)
 
 				Convey("Then proper limits values are returned", func() {
-					So(volumes.Count, ShouldEqual, 2)
-					So(volumes.Bytes, ShouldEqual, (s.Vol1Size+s.Vol2Size)*1024*1024*1024)
+					So(len(volumes), ShouldEqual, 2)
+					So(volumes[s.Tenant1ID].Bytes, ShouldEqual, s.Vol1Size*1024*1024*1024)
+					So(volumes[s.Tenant2ID].Bytes, ShouldEqual, s.Vol2Size*1024*1024*1024)
+					So(volumes[s.Tenant1ID].Count, ShouldEqual, 1)
+					So(volumes[s.Tenant2ID].Count, ShouldEqual, 1)
 				})
 
 				Convey("and no error reported", func() {
@@ -126,8 +134,9 @@ func (s *CinderV2Suite) TestGetSnapshots() {
 				snapshots, err := dispatch.GetSnapshots(provider)
 
 				Convey("Then proper limits values are returned", func() {
-					So(snapshots.Count, ShouldEqual, 1)
-					So(snapshots.Bytes, ShouldEqual, s.SnapShotSize*1024*1024*1024)
+					So(len(snapshots), ShouldEqual, 1)
+					So(snapshots[s.Tenant1ID].Count, ShouldEqual, 1)
+					So(snapshots[s.Tenant1ID].Bytes, ShouldEqual, s.SnapShotSize*1024*1024*1024)
 				})
 
 				Convey("and no error reported", func() {
@@ -166,9 +175,6 @@ func registerRoot() {
 }
 
 func registerAuthentication(s *CinderV2Suite) {
-	s.V1 = "v1/v1ffff"
-	s.V2 = "v2/v2ffff"
-	s.Token = "2ed210f132564f21b178afb197ee99e3"
 	th.Mux.HandleFunc("/v2.0/tokens", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `
 				{
@@ -261,124 +267,122 @@ func registerLimits(s *CinderV2Suite) {
 	})
 }
 
-func registerVolMeta(s *CinderV2Suite) {
-	s.VolMeta = "/" + s.V2 + "/volumes"
-	s.Vol1 = s.V2 + "/volumes/vol1cccc"
-	s.Vol2 = s.V2 + "/volumes/vol2cccc"
-	th.Mux.HandleFunc(s.VolMeta, func(w http.ResponseWriter, r *http.Request) {
+func registerVolumes(s *CinderV2Suite) {
+	url := "/v2/v2ffff/volumes/detail" //?all_tenants=true
+	th.Mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+		th.TestFormValues(s.T(), r, map[string]string{"all_tenants": "true"})
 		th.TestMethod(s.T(), r, "GET")
 		th.TestHeader(s.T(), r, "X-Auth-Token", s.Token)
-
-		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `
-				{
-					"volumes": [
-						{
-							"id": "vol2cccc",
-							"links": [
-								{
-									"href": "%s",
-									"rel": "self"
-								},
-								{
-									"href": "%s",
-									"rel": "bookmark"
-								}
-							],
-							"name": "vol2"
-						},
-						{
-							"id": "vol1cccc",
-							"links": [
-								{
-									"href": "%s",
-									"rel": "self"
-								},
-								{
-									"href": "%s",
-									"rel": "bookmark"
-								}
-							],
-							"name": "vol1"
-						}
-					]
-				}
-			`, th.Endpoint()+s.Vol2, th.Endpoint()+s.Vol2, th.Endpoint()+s.Vol1, th.Endpoint()+s.Vol1)
-	})
-
-}
-
-func registerVolume(s *CinderV2Suite, volID string, volSize int) {
-	th.Mux.HandleFunc("/"+volID, func(w http.ResponseWriter, r *http.Request) {
-		th.TestMethod(s.T(), r, "GET")
-		th.TestHeader(s.T(), r, "X-Auth-Token", s.Token)
-
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
 		fmt.Fprintf(w, `
 			{
-			  "volume": {
-				"attachments": [],
-				"availability_zone": "nova",
-				"bootable": "true",
-				"consistencygroup_id": null,
-				"created_at": "2016-02-21T17:00:12.000000",
-				"description": null,
-				"encrypted": false,
-				"id": "vol1cccc",
-				"links": [
-				  {
-					"href": "%s",
-					"rel": "self"
-				  },
-				  {
-					"href": "%s",
-					"rel": "bookmark"
-				  }
-				],
-				"metadata": {},
-				"multiattach": false,
-				"name": "vol1",
-				"os-vol-host-attr:host": "devstack@lvmdriver-1#lvmdriver-1",
-				"os-vol-mig-status-attr:migstat": null,
-				"os-vol-mig-status-attr:name_id": null,
-				"os-vol-tenant-attr:tenant_id": "97ea299c37bb4e04b3779039ea8aba44",
-				"os-volume-replication:driver_data": null,
-				"os-volume-replication:extended_status": null,
-				"replication_status": "disabled",
-				"size": %d,
-				"snapshot_id": null,
-				"source_volid": null,
-				"status": "available",
-				"user_id": "7379713c4da04e88af09fe8c7f2077dc",
-				"volume_image_metadata": {
-				  "checksum": "eb9139e4942121f22bbc2afc0400b2a4",
-				  "container_format": "ami",
-				  "disk_format": "ami",
-				  "image_id": "550f1f21-4b58-4fc3-9158-105487b2d5e8",
-				  "image_name": "cirros-0.3.4-x86_64-uec",
-				  "kernel_id": "30e61305-a024-4182-9a8c-697c08b3d73d",
-				  "min_disk": "0",
-				  "min_ram": "0",
-				  "ramdisk_id": "f78c9363-0fde-4a48-9899-2071505da7d5",
-				  "size": "25165824"
-				},
-				"volume_type": "lvmdriver-1"
-			  }
-			}
-		`, th.Endpoint()+volID, th.Endpoint()+volID, volSize)
+				"volumes": [
+					{
+						"attachments": [],
+						"availability_zone": "nova",
+						"bootable": "true",
+						"consistencygroup_id": null,
+						"created_at": "2016-02-12T10:04:27.000000",
+						"description": "Volume for test tenant",
+						"encrypted": false,
+						"id": "%s",
+						"links": [
+							{
+								"href": "http://192.168.20.2:8776/v2/d98e06adf5db49ad9f372625cad7840b/volumes/1877e478-56bd-4993-80f0-8da9a7e06290",
+								"rel": "self"
+							},
+							{
+								"href": "http://192.168.20.2:8776/d98e06adf5db49ad9f372625cad7840b/volumes/1877e478-56bd-4993-80f0-8da9a7e06290",
+								"rel": "bookmark"
+							}
+						],
+						"metadata": {},
+						"multiattach": false,
+						"name": "test_tenant_volume",
+						"os-vol-host-attr:host": "rbd:volumes#DEFAULT",
+						"os-vol-mig-status-attr:migstat": null,
+						"os-vol-mig-status-attr:name_id": null,
+						"os-vol-tenant-attr:tenant_id": "%s",
+						"os-volume-replication:driver_data": null,
+						"os-volume-replication:extended_status": null,
+						"replication_status": "disabled",
+						"size": %d,
+						"snapshot_id": null,
+						"source_volid": null,
+						"status": "available",
+						"user_id": "a3edd7a918fc4373981051c975295dc8",
+						"volume_image_metadata": {
+							"checksum": "ee1eca47dc88f4879d8a229cc70a07c6",
+							"container_format": "bare",
+							"disk_format": "qcow2",
+							"image_id": "e256d524-bbd7-40af-9bfa-463d86917459",
+							"image_name": "TestVM",
+							"min_disk": "0",
+							"min_ram": "64",
+							"size": "13287936"
+						},
+						"volume_type": null
+					},
+					{
+						"attachments": [],
+						"availability_zone": "nova",
+						"bootable": "true",
+						"consistencygroup_id": null,
+						"created_at": "2016-02-09T15:24:27.000000",
+						"description": null,
+						"encrypted": false,
+						"id": "%s",
+						"links": [
+							{
+								"href": "http://192.168.20.2:8776/v2/d98e06adf5db49ad9f372625cad7840b/volumes/ff3e438c-250d-4b03-82ce-3bec50a6c858",
+								"rel": "self"
+							},
+							{
+								"href": "http://192.168.20.2:8776/d98e06adf5db49ad9f372625cad7840b/volumes/ff3e438c-250d-4b03-82ce-3bec50a6c858",
+								"rel": "bookmark"
+							}
+						],
+						"metadata": {},
+						"multiattach": false,
+						"name": "test-volume",
+						"os-vol-host-attr:host": "rbd:volumes#DEFAULT",
+						"os-vol-mig-status-attr:migstat": null,
+						"os-vol-mig-status-attr:name_id": null,
+						"os-vol-tenant-attr:tenant_id": "%s",
+						"os-volume-replication:driver_data": null,
+						"os-volume-replication:extended_status": null,
+						"replication_status": "disabled",
+						"size": %d,
+						"snapshot_id": null,
+						"source_volid": null,
+						"status": "available",
+						"user_id": "a3edd7a918fc4373981051c975295dc8",
+						"volume_image_metadata": {
+							"checksum": "ee1eca47dc88f4879d8a229cc70a07c6",
+							"container_format": "bare",
+							"disk_format": "qcow2",
+							"image_id": "e256d524-bbd7-40af-9bfa-463d86917459",
+							"image_name": "TestVM",
+							"min_disk": "0",
+							"min_ram": "64",
+							"size": "13287936"
+						},
+						"volume_type": null
+					}
+    			]
+       		 }
+		`, s.Vol1, s.Tenant1ID, s.Vol1Size, s.Vol2, s.Tenant2ID, s.Vol2Size)
 	})
-
 }
 
-func registerSnapshots(s *CinderV2Suite, snapSize int) {
-	snapshots := "/" + s.V2 + "/snapshots"
+func registerSnapshots(s *CinderV2Suite) {
+	snapshots := "/v2/v2ffff/snapshots/detail"
 	th.Mux.HandleFunc(snapshots, func(w http.ResponseWriter, r *http.Request) {
 		th.TestMethod(s.T(), r, "GET")
 		th.TestHeader(s.T(), r, "X-Auth-Token", s.Token)
-
+		th.TestFormValues(s.T(), r, map[string]string{"all_tenants": "true"})
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
@@ -391,12 +395,14 @@ func registerSnapshots(s *CinderV2Suite, snapSize int) {
 						"id": "snap1cccc",
 						"metadata": {},
 						"name": "snapshot_1",
+						"os-extended-snapshot-attributes:progress": "100",
+            			"os-extended-snapshot-attributes:project_id": "%s",
 						"size": %d,
 						"status": "available",
 						"volume_id": "495a1698-ca2f-4e84-8d34-fa544c65ae3d"
 					}
 				]
 			}
-		`, snapSize)
+		`, s.Tenant1ID, s.SnapShotSize)
 	})
 }

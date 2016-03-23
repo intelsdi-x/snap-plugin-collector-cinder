@@ -31,17 +31,22 @@ import (
 
 type CommonSuite struct {
 	suite.Suite
-	Token                string
-	BlockStorageEndpoint string
-	V1, V2               string
-	Tenant1ID, Tenant2ID string
+	Token                    string
+	BlockStorageEndpoint     string
+	V1, V2                   string
+	Tenant1ID, Tenant2ID     string
+	Tenant1Name, Tenant2Name string
 }
 
 func (s *CommonSuite) SetupSuite() {
 	th.SetupHTTP()
 	registerRoot()
 	registerAuthentication(s)
-	registerTenants(s, "3e3e3e", "4f4f4f")
+	s.Tenant1Name = "admin"
+	s.Tenant2Name = "demo"
+	s.Tenant1ID = "3e3e3e"
+	s.Tenant2ID = "4f4f4f"
+	registerTenants(s)
 }
 
 func (s *CommonSuite) TearDownSuite() {
@@ -56,8 +61,8 @@ func (s *CommonSuite) TestGetTenants() {
 
 			Convey("Then list of available tenats is returned", func() {
 				So(len(tenants), ShouldEqual, 2)
-				So(tenants[0].ID, ShouldEqual, s.Tenant1ID)
-				So(tenants[1].ID, ShouldEqual, s.Tenant2ID)
+				So(tenants[s.Tenant1ID], ShouldEqual, s.Tenant1Name)
+				So(tenants[s.Tenant2ID], ShouldEqual, s.Tenant2Name)
 				So(err, ShouldBeNil)
 			})
 		})
@@ -226,9 +231,7 @@ func registerAuthentication(s *CommonSuite) {
 	})
 }
 
-func registerTenants(s *CommonSuite, tenant1 string, tenant2 string) {
-	s.Tenant1ID = tenant1
-	s.Tenant2ID = tenant2
+func registerTenants(s *CommonSuite) {
 	th.Mux.HandleFunc("/v2.0/tenants", func(w http.ResponseWriter, r *http.Request) {
 		th.TestMethod(s.T(), r, "GET")
 		th.TestHeader(s.T(), r, "X-Auth-Token", s.Token)
@@ -243,18 +246,18 @@ func registerTenants(s *CommonSuite, tenant1 string, tenant2 string) {
 						"description": "Test tenat",
 						"enabled": true,
 						"id": "%s",
-						"name": "test_tenant"
+						"name": "%s"
 					},
 					{
 						"description": "admin tenant",
 						"enabled": true,
 						"id": "%s",
-						"name": "admin"
+						"name": "%s"
 					}
 				],
 				"tenants_links": []
 			}
-		`, s.Tenant1ID, s.Tenant2ID)
+		`, s.Tenant1ID, s.Tenant1Name, s.Tenant2ID, s.Tenant2Name)
 	})
 }
 
