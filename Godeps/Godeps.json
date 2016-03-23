@@ -4,7 +4,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/intelsdi-x/snap-plugin-utilities",
-			"Rev": "7e9b5175465bb8d095c9a7ad4ced57e5c376efd0"
+			"Rev": "07bd84723cf46ffdddbd7e0544bdd41856c19fa4"
 		},
 		{
 			"ImportPath": "github.com/mitchellh/mapstructure",
