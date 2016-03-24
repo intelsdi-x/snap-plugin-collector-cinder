@@ -7,14 +7,14 @@
     "workflow": {
         "collect": {
             "metrics": {
-		        "/intel/openstack/cinder/demo/limits/MaxTotalVolumeGigabytes": {},
-		        "/intel/openstack/cinder/demo/volumes/count": {},
-		        "/intel/openstack/cinder/demo/volumes/bytes": {},
-		        "/intel/openstack/cinder/demo/snapshots/count": {},
-		        "/intel/openstack/cinder/demo/snapshots/bytes": {}
+		        "/intel/openstack/cinder/admin/limits/MaxTotalVolumeGigabytes": {},
+		        "/intel/openstack/cinder/admin/volumes/count": {},
+		        "/intel/openstack/cinder/admin/volumes/bytes": {},
+		        "/intel/openstack/cinder/admin/snapshots/count": {},
+		        "/intel/openstack/cinder/admin/snapshots/bytes": {}
            },
             "config": {
-                "/intel/openstack/cinder/": {
+                "/intel/openstack/cinder": {
                     "tenant": "admin"
                 }
             },
