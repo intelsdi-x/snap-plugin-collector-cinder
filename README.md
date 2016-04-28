@@ -4,6 +4,7 @@ snap plugin for collecting metrics from OpenStack Cinder module.
 
 1. [Getting Started](#getting-started)
   * [System Requirements](#system-requirements)
+  * [Operating systems](#operating-systems)
   * [Installation](#installation)
   * [Configuration and Usage](#configuration-and-usage)
 2. [Documentation](#documentation)
