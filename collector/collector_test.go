@@ -19,7 +19,7 @@ package collector
 import (
 	"fmt"
 	"net/http"
-	"strings"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -28,12 +28,11 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/intelsdi-x/snap/control/plugin"
+	"github.com/intelsdi-x/snap/core"
 	"github.com/intelsdi-x/snap/core/cdata"
 	"github.com/intelsdi-x/snap/core/ctypes"
 
-	str "github.com/intelsdi-x/snap-plugin-utilities/strings"
-
-	"net/http/httptest"
+	"github.com/intelsdi-x/snap-plugin-utilities/str"
 )
 
 type CollectorSuite struct {
@@ -100,23 +99,23 @@ func (s *CollectorSuite) TestGetMetricTypes() {
 			Convey("and proper metric types are returned", func() {
 				metricNames := []string{}
 				for _, m := range mts {
-					metricNames = append(metricNames, strings.Join(m.Namespace(), "/"))
+					metricNames = append(metricNames, m.Namespace().String())
 
 				}
 
 				So(len(mts), ShouldEqual, 12)
-				So(str.Contains(metricNames, "intel/openstack/cinder/demo/snapshots/count"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/demo/snapshots/bytes"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/demo/volumes/count"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/demo/volumes/bytes"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/demo/limits/MaxTotalVolumeGigabytes"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/demo/limits/MaxTotalVolumes"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/admin/volumes/count"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/admin/volumes/bytes"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/admin/limits/MaxTotalVolumeGigabytes"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/admin/limits/MaxTotalVolumes"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/admin/snapshots/count"), ShouldBeTrue)
-				So(str.Contains(metricNames, "intel/openstack/cinder/admin/snapshots/bytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/demo/snapshots/count"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/demo/snapshots/bytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/demo/volumes/count"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/demo/volumes/bytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/demo/limits/MaxTotalVolumeGigabytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/demo/limits/MaxTotalVolumes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/admin/volumes/count"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/admin/volumes/bytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/admin/limits/MaxTotalVolumeGigabytes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/admin/limits/MaxTotalVolumes"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/admin/snapshots/count"), ShouldBeTrue)
+				So(str.Contains(metricNames, "/intel/openstack/cinder/admin/snapshots/bytes"), ShouldBeTrue)
 			})
 		})
 	})
@@ -126,20 +125,20 @@ func (s *CollectorSuite) TestCollectMetrics() {
 
 	Convey("Given set of metric types", s.T(), func() {
 		cfg := setupCfg(s.server.URL, "me", "secret", "admin")
-		m1 := plugin.PluginMetricType{
-			Namespace_: []string{"intel", "openstack", "cinder", "demo", "limits", "MaxTotalVolumeGigabytes"},
+		m1 := plugin.MetricType{
+			Namespace_: core.NewNamespace("intel", "openstack", "cinder", "demo", "limits", "MaxTotalVolumeGigabytes"),
 			Config_:    cfg.ConfigDataNode}
-		m2 := plugin.PluginMetricType{
-			Namespace_: []string{"intel", "openstack", "cinder", "demo", "volumes", "count"},
+		m2 := plugin.MetricType{
+			Namespace_: core.NewNamespace("intel", "openstack", "cinder", "demo", "volumes", "count"),
 			Config_:    cfg.ConfigDataNode}
-		m3 := plugin.PluginMetricType{
-			Namespace_: []string{"intel", "openstack", "cinder", "demo", "snapshots", "bytes"},
+		m3 := plugin.MetricType{
+			Namespace_: core.NewNamespace("intel", "openstack", "cinder", "demo", "snapshots", "bytes"),
 			Config_:    cfg.ConfigDataNode}
 
 		Convey("When ColelctMetrics() is called", func() {
 			collector := New()
 
-			mts, err := collector.CollectMetrics([]plugin.PluginMetricType{m1, m2, m3})
+			mts, err := collector.CollectMetrics([]plugin.MetricType{m1, m2, m3})
 
 			Convey("Then no error should be reported", func() {
 				So(err, ShouldBeNil)
@@ -148,22 +147,22 @@ func (s *CollectorSuite) TestCollectMetrics() {
 			Convey("and proper metric types are returned", func() {
 				metricNames := map[string]interface{}{}
 				for _, m := range mts {
-					ns := strings.Join(m.Namespace(), "/")
+					ns := m.Namespace().String()
 					metricNames[ns] = m.Data()
 					fmt.Println(ns, "=", m.Data())
 				}
 
 				So(len(mts), ShouldEqual, 3)
 
-				val, ok := metricNames["intel/openstack/cinder/demo/limits/MaxTotalVolumeGigabytes"]
+				val, ok := metricNames["/intel/openstack/cinder/demo/limits/MaxTotalVolumeGigabytes"]
 				So(ok, ShouldBeTrue)
 				So(val, ShouldEqual, s.MaxTotalVolumeGigabytes)
 
-				val, ok = metricNames["intel/openstack/cinder/demo/volumes/count"]
+				val, ok = metricNames["/intel/openstack/cinder/demo/volumes/count"]
 				So(ok, ShouldBeTrue)
 				So(val, ShouldEqual, 1)
 
-				val, ok = metricNames["intel/openstack/cinder/demo/snapshots/bytes"]
+				val, ok = metricNames["/intel/openstack/cinder/demo/snapshots/bytes"]
 				So(ok, ShouldBeTrue)
 				So(val, ShouldEqual, s.SnapShotSize*1024*1024*1024)
 
@@ -177,13 +176,13 @@ func TestCollectorSuite(t *testing.T) {
 	suite.Run(t, collectorTestSuite)
 }
 
-func setupCfg(endpoint, user, password, tenant string) plugin.PluginConfigType {
+func setupCfg(endpoint, user, password, tenant string) plugin.ConfigType {
 	node := cdata.NewNode()
 	node.AddItem("endpoint", ctypes.ConfigValueStr{Value: endpoint})
 	node.AddItem("user", ctypes.ConfigValueStr{Value: user})
 	node.AddItem("password", ctypes.ConfigValueStr{Value: password})
 	node.AddItem("tenant", ctypes.ConfigValueStr{Value: tenant})
-	return plugin.PluginConfigType{ConfigDataNode: node}
+	return plugin.ConfigType{ConfigDataNode: node}
 }
 
 func registerIdentityRoot(s *CollectorSuite, r *mux.Router) {
