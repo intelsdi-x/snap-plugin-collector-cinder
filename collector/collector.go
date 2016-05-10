@@ -16,7 +16,6 @@ package collector
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -46,16 +45,10 @@ const (
 
 // New creates initialized instance of Cinder collector
 func New() *collector {
-	host, err := os.Hostname()
-	if err != nil {
-		host = "localhost"
-	}
-
 	providers := map[string]*gophercloud.ProviderClient{}
 	allTenants := map[string]string{}
 	allLimits := map[string]types.Limits{}
 	return &collector{
-		host:       host,
 		allTenants: allTenants,
 		providers:  providers,
 		allLimits:  allLimits,
@@ -226,12 +219,6 @@ func (c *collector) CollectMetrics(metricTypes []plugin.MetricType) ([]plugin.Me
 
 	metrics := []plugin.MetricType{}
 	for _, metricType := range metricTypes {
-		tags := metricType.Tags()
-		if tags == nil {
-			tags = map[string]string{}
-		}
-		tags["hostname"] = c.host
-
 		namespace := metricType.Namespace().Strings()
 		tenant := namespace[3]
 		// Construct temporary struct to accommodate all gathered metrics
@@ -247,7 +234,6 @@ func (c *collector) CollectMetrics(metricTypes []plugin.MetricType) ([]plugin.Me
 
 		// Extract values by namespace from temporary struct and create metrics
 		metric := plugin.MetricType{
-			Tags_:      tags,
 			Timestamp_: time.Now(),
 			Namespace_: metricType.Namespace(),
 			Data_:      ns.GetValueByNamespace(metricContainer, namespace[4:]),
@@ -278,7 +264,6 @@ func Meta() *plugin.PluginMeta {
 }
 
 type collector struct {
-	host       string
 	allTenants map[string]string
 	service    services.Service
 	common     openstackintel.Commoner
