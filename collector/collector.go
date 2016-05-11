@@ -16,7 +16,6 @@ package collector
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -25,10 +24,11 @@ import (
 
 	"github.com/intelsdi-x/snap/control/plugin"
 	"github.com/intelsdi-x/snap/control/plugin/cpolicy"
+	"github.com/intelsdi-x/snap/core"
 
 	"github.com/intelsdi-x/snap-plugin-utilities/config"
 	"github.com/intelsdi-x/snap-plugin-utilities/ns"
-	str "github.com/intelsdi-x/snap-plugin-utilities/strings"
+	"github.com/intelsdi-x/snap-plugin-utilities/str"
 
 	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack"
 	"github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/services"
@@ -37,7 +37,7 @@ import (
 
 const (
 	name    = "cinder"
-	version = 1
+	version = 2
 	plgtype = plugin.CollectorPluginType
 	vendor  = "intel"
 	fs      = "openstack"
@@ -45,16 +45,10 @@ const (
 
 // New creates initialized instance of Cinder collector
 func New() *collector {
-	host, err := os.Hostname()
-	if err != nil {
-		host = "localhost"
-	}
-
 	providers := map[string]*gophercloud.ProviderClient{}
 	allTenants := map[string]string{}
 	allLimits := map[string]types.Limits{}
 	return &collector{
-		host:       host,
 		allTenants: allTenants,
 		providers:  providers,
 		allLimits:  allLimits,
@@ -63,8 +57,8 @@ func New() *collector {
 
 // GetMetricTypes returns list of available metric types
 // It returns error in case retrieval was not successful
-func (c *collector) GetMetricTypes(cfg plugin.PluginConfigType) ([]plugin.PluginMetricType, error) {
-	mts := []plugin.PluginMetricType{}
+func (c *collector) GetMetricTypes(cfg plugin.ConfigType) ([]plugin.MetricType, error) {
+	mts := []plugin.MetricType{}
 
 	var err error
 	c.allTenants, err = getTenants(cfg)
@@ -86,8 +80,8 @@ func (c *collector) GetMetricTypes(cfg plugin.PluginConfigType) ([]plugin.Plugin
 	}
 
 	for _, namespace := range namespaces {
-		mts = append(mts, plugin.PluginMetricType{
-			Namespace_: strings.Split(namespace, "/"),
+		mts = append(mts, plugin.MetricType{
+			Namespace_: core.NewNamespace(strings.Split(namespace, "/")...),
 			Config_:    cfg.ConfigDataNode,
 		})
 	}
@@ -97,7 +91,7 @@ func (c *collector) GetMetricTypes(cfg plugin.PluginConfigType) ([]plugin.Plugin
 
 // CollectMetrics returns list of requested metric values
 // It returns error in case retrieval was not successful
-func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plugin.PluginMetricType, error) {
+func (c *collector) CollectMetrics(metricTypes []plugin.MetricType) ([]plugin.MetricType, error) {
 	// get admin tenant from configuration. admin tenant is needed for gathering volumes and snapshots metrics at once
 	item, err := config.GetConfigItem(metricTypes[0], "tenant")
 	if err != nil {
@@ -123,12 +117,12 @@ func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plu
 			return nil, fmt.Errorf("Incorrect namespace lenth. Expected 6 is %d", len(namespace))
 		}
 
-		tenant := namespace[3]
+		tenant := namespace[3].Value
 		collectTenants.Add(tenant)
 
-		if str.Contains(namespace, "limits") {
+		if str.Contains(namespace.Strings(), "limits") {
 			collectLimits = true
-		} else if str.Contains(namespace, "volumes") {
+		} else if str.Contains(namespace.Strings(), "volumes") {
 			collectVolumes = true
 		} else {
 			collectSnapshots = true
@@ -223,9 +217,9 @@ func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plu
 		}
 	}
 
-	metrics := []plugin.PluginMetricType{}
+	metrics := []plugin.MetricType{}
 	for _, metricType := range metricTypes {
-		namespace := metricType.Namespace()
+		namespace := metricType.Namespace().Strings()
 		tenant := namespace[3]
 		// Construct temporary struct to accommodate all gathered metrics
 		metricContainer := struct {
@@ -239,10 +233,9 @@ func (c *collector) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plu
 		}
 
 		// Extract values by namespace from temporary struct and create metrics
-		metric := plugin.PluginMetricType{
-			Source_:    c.host,
+		metric := plugin.MetricType{
 			Timestamp_: time.Now(),
-			Namespace_: namespace,
+			Namespace_: metricType.Namespace(),
 			Data_:      ns.GetValueByNamespace(metricContainer, namespace[4:]),
 		}
 		metrics = append(metrics, metric)
@@ -271,7 +264,6 @@ func Meta() *plugin.PluginMeta {
 }
 
 type collector struct {
-	host       string
 	allTenants map[string]string
 	service    services.Service
 	common     openstackintel.Commoner
@@ -282,7 +274,7 @@ type collector struct {
 func (c *collector) authenticate(cfg interface{}, tenant string) error {
 	if _, found := c.providers[tenant]; !found {
 		// get credentials and endpoint from configuration
-		items, err := config.GetConfigItems(cfg, []string{"endpoint", "user", "password"})
+		items, err := config.GetConfigItems(cfg, "endpoint", "user", "password")
 		if err != nil {
 			return err
 		}
@@ -307,7 +299,7 @@ func (c *collector) authenticate(cfg interface{}, tenant string) error {
 }
 
 func getTenants(cfg interface{}) (map[string]string, error) {
-	items, err := config.GetConfigItems(cfg, []string{"endpoint", "user", "password"})
+	items, err := config.GetConfigItems(cfg, "endpoint", "user", "password")
 	if err != nil {
 		return nil, err
 	}
