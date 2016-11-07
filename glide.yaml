@@ -1,0 +1,28 @@
+package: github.com/intelsdi-x/snap-plugin-collector-cinder
+import:
+- package: github.com/intelsdi-x/snap-plugin-utilities
+  subpackages:
+  - config
+  - ns
+  - str
+- package: github.com/intelsdi-x/snap
+  subpackages:
+  - control/plugin
+  - control/plugin/cpolicy
+- package: github.com/mitchellh/mapstructure
+- package: github.com/rackspace/gophercloud
+  subpackages:
+  - openstack
+  - openstack/blockstorage/v1/apiversions
+  - openstack/blockstorage/v1/snapshots
+  - openstack/blockstorage/v1/volumes
+  - openstack/identity/v2/tenants
+  - pagination
+testImport:
+- package: github.com/gorilla/mux
+- package: github.com/smartystreets/goconvey
+  subpackages:
+  - convey
+- package: github.com/stretchr/testify
+  subpackages:
+  - suite

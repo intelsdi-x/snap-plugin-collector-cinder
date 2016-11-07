@@ -28,7 +28,7 @@ import (
 
 	"github.com/intelsdi-x/snap-plugin-utilities/config"
 	"github.com/intelsdi-x/snap-plugin-utilities/ns"
-	str "github.com/intelsdi-x/snap-plugin-utilities/strings"
+	"github.com/intelsdi-x/snap-plugin-utilities/str"
 
 	openstackintel "github.com/intelsdi-x/snap-plugin-collector-cinder/openstack"
 	"github.com/intelsdi-x/snap-plugin-collector-cinder/openstack/services"
