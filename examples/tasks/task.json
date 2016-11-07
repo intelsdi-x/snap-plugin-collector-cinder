@@ -18,8 +18,14 @@
                     "tenant": "admin"
                 }
             },
-            "process": null,
-            "publish": null
+            "publish": [
+                {
+                    "plugin_name": "file",
+                    "config": {
+                        "file": "/tmp/snap-cinder-file.log"
+                    }
+                }
+            ] 
         }
     }
 }

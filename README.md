@@ -1,6 +1,6 @@
-# snap plugin collector - cinder
+# Snap collector plugin - cinder
 
-snap plugin for collecting metrics from OpenStack Cinder module. 
+Snap plugin for collecting metrics from OpenStack Cinder module. 
 
 1. [Getting Started](#getting-started)
   * [System Requirements](#system-requirements)
@@ -8,7 +8,7 @@ snap plugin for collecting metrics from OpenStack Cinder module.
   * [Configuration and Usage](#configuration-and-usage)
 2. [Documentation](#documentation)
   * [Collected Metrics](#collected-metrics)
-  * [snap's Global Config](#snaps-global-config)
+  * [Snap's Global Config](#snaps-global-config)
   * [Examples](#examples)
   * [Roadmap](#roadmap)
 3. [Community Support](#community-support)
@@ -25,12 +25,12 @@ It can run locally on the host, or in proxy mode (communicating with the host vi
  * Cinder V2 API
  
 ### Operating systems
-All OSs currently supported by snap:
+All OSs currently supported by Snap:
 * Linux/amd64
 
 ### Installation
 #### Download cinder plugin binary:
-You can get the pre-built binaries for your OS and architecture at snap's [GitHub Releases](https://github.com/intelsdi-x/snap/releases) page. Download the plugins package from the latest release, unzip and store in a path you want `snapd` to access.
+You can get the pre-built binaries for your OS and architecture at Snap's [GitHub Releases](https://github.com/intelsdi-x/snap/releases) page. Download the plugins package from the latest release, unzip and store in a path you want `snapd` to access.
 
 #### To build the plugin binary:
 Fork https://github.com/intelsdi-x/snap-plugin-collector-cinder
@@ -43,12 +43,12 @@ Build the plugin by running make in repo:
 ```
 $ make
 ```
-This builds the plugin in `/build/rootfs`
+This builds the plugin in `/build/${GOOS}/${GOARCH}`
 
 
 ### Configuration and Usage
-* Set up the [snap framework](https://github.com/intelsdi-x/snap/blob/master/README.md#getting-started).
-* Create Global Config, see description in [snap's Global Config] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/README.md#snaps-global-config).
+* Set up the [Snap framework](https://github.com/intelsdi-x/snap/blob/master/README.md#getting-started).
+* Create Global Config, see description in [Snap's Global Config] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/README.md#snaps-global-config).
 * Load the plugin and create a task, see example in [Examples](https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/README.md#examples).
 
 #### Suggestions
@@ -67,8 +67,8 @@ intel/openstack/cinder/\<tenant_name\>/snapshots/bytes | int | Total number of b
 intel/openstack/cinder/\<tenant_name\>/limits/MaxTotalVolumeGigabytes | int64 | Tenant quota for volume size
 intel/openstack/cinder/\<tenant_name\>/limits/MaxTotalVolumes | int64 | Tenant quota for number of volumes
 
-### snap's Global Config
-Global configuration files are described in [snap's documentation](https://github.com/intelsdi-x/snap/blob/master/docs/SNAPD_CONFIGURATION.md). You have to add section "cinder" in "collector" section and then specify following options:
+### Snap's Global Config
+Global configuration files are described in [Snap's documentation](https://github.com/intelsdi-x/snap/blob/master/docs/SNAPD_CONFIGURATION.md). You have to add section "cinder" in "collector" section and then specify following options:
 - `"endpoint"` - URL for OpenStack Identity endpoint aka Keystone (ex. `"http://keystone.public.org:5000"`)
 - `"user"` -  user name which has access to OpenStack. It is highly prefer to provide user with administrative privileges. Otherwise returned metrics may not be complete.
 - `"password"` -  user password 
@@ -81,29 +81,33 @@ Example running snap-plugin-collector-cinder plugin and writing data to a file.
 
 Make sure that your `$SNAP_PATH` is set, if not:
 ```
-$ export SNAP_PATH=<snapDirectoryPath>/build
+$ export SNAP_PATH=$GOPATH/src/github.com/intelsdi-x/snap/build/linux/x86_64
 ```
 Other paths to files should be set according to your configuration, using a file you should indicate where it is located.
 
 Create Global Config, see example in [examples/cfg/] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/examples/cfg/).
 
-In one terminal window, open the snap daemon (in this case with logging set to 1,  trust disabled and global configuration saved in cfg.json):
+In one terminal window, open the Snap daemon (in this case with logging set to 1,  trust disabled and global configuration saved in cfg.json):
 ```
-$ $SNAP_PATH/bin/snapd -l 1 -t 0 --config cfg.json
+$ $SNAP_PATH/snapd -l 1 -t 0 --config examples/cfg/cfg.json
 ```
 In another terminal window:
 
 Load snap-plugin-collector-cinder plugin:
 ```
-$ $SNAP_PATH/bin/snapctl plugin load snap-plugin-collector-cinder
+$ $SNAP_PATH/snapctl plugin load build/linux/x86_64/snap-plugin-collector-cinder
+```
+Download desired processor and publisher plugins eg.
+```
+$ wget http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-file/latest/linux/x86_64/snap-plugin-publisher-file
 ```
 Load file plugin for publishing:
 ```
-$ $SNAP_PATH/bin/snapctl plugin load $SNAP_PATH/plugin/snap-publisher-file
+$ $SNAP_PATH/snapctl plugin load snap-plugin-publisher-file
 ```
 See available metrics for your system:
 ```
-$ $SNAP_PATH/bin/snapctl metric list
+$ $SNAP_PATH/snapctl metric list
 ```
 Create a task manifest file to use snap-plugin-collector-cinder plugin (exemplary file in [examples/tasks/] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/examples/tasks/)):
 ```
@@ -127,15 +131,21 @@ Create a task manifest file to use snap-plugin-collector-cinder plugin (exemplar
                     "tenant": "admin"
                 }
             },
-            "process": null,
-            "publish": null
+            "publish": [
+                {
+                    "plugin_name": "file",
+                    "config": {
+                        "file": "/tmp/snap-cinder-file.log"
+                    }
+                }
+            ]
         }
     }
 }
 ```
 Create a task:
 ```
-$ $SNAP_PATH/bin/snapctl task create -t task.json
+$ $SNAP_PATH/snapctl task create -t examples/tasks/task.json
 ```
 
 ### Roadmap
@@ -146,9 +156,7 @@ There are few items on current roadmap for this plugin:
 - support for Cinder V1 API
 
 ## Community Support
-This repository is one of **many** plugins in **snap**, a powerful telemetry framework. The full project is at http://github.com/intelsdi-x/snap.
-To reach out on other use cases, visit:
-* [snap Gitter channel](https://gitter.im/intelsdi-x/snap)
+This repository is one of **many** plugins in **Snap**, a powerful telemetry framework. The full project is at http://github.com/intelsdi-x/snap.
 
 ## Contributing
 We love contributions!
@@ -158,7 +166,7 @@ There's more than one way to give back, from examples to blogs to code updates. 
 And **thank you!** Your contribution, through code and participation, is incredibly important to us.
 
 ## License
-[snap](http://github.com/intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
+[Snap](http://github.com/intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
 
 ## Acknowledgements
 * Author: [Marcin Krolik](https://github.com/marcin-krolik)
