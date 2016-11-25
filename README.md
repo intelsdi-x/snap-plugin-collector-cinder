@@ -31,7 +31,7 @@ All OSs currently supported by Snap:
 
 ### Installation
 #### Download cinder plugin binary:
-You can get the pre-built binaries for your OS and architecture at Snap's [GitHub Releases](https://github.com/intelsdi-x/snap/releases) page. Download the plugins package from the latest release, unzip and store in a path you want `snapd` to access.
+You can get the pre-built binaries for your OS and architecture at Snap's [GitHub Releases](https://github.com/intelsdi-x/snap/releases) page. Download the plugins package from the latest release, unzip and store in a path you want `snapteld` to access.
 
 #### To build the plugin binary:
 Fork https://github.com/intelsdi-x/snap-plugin-collector-cinder
@@ -90,13 +90,13 @@ Create Global Config, see example in [examples/cfg/] (https://github.com/intelsd
 
 In one terminal window, open the Snap daemon (in this case with logging set to 1,  trust disabled and global configuration saved in cfg.json):
 ```
-$ $SNAP_PATH/snapd -l 1 -t 0 --config examples/cfg/cfg.json
+$ $SNAP_PATH/snapteld -l 1 -t 0 --config examples/cfg/cfg.json
 ```
 In another terminal window:
 
 Load snap-plugin-collector-cinder plugin:
 ```
-$ $SNAP_PATH/snapctl plugin load build/linux/x86_64/snap-plugin-collector-cinder
+$ $SNAP_PATH/snaptel plugin load build/linux/x86_64/snap-plugin-collector-cinder
 ```
 Download desired publisher plugin eg.
 ```
@@ -104,11 +104,11 @@ $ wget http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-file/lates
 ```
 Load file plugin for publishing:
 ```
-$ $SNAP_PATH/snapctl plugin load snap-plugin-publisher-file
+$ $SNAP_PATH/snaptel plugin load snap-plugin-publisher-file
 ```
 See available metrics for your system:
 ```
-$ $SNAP_PATH/snapctl metric list
+$ $SNAP_PATH/snaptel metric list
 ```
 Create a task manifest file to use snap-plugin-collector-cinder plugin (exemplary file in [examples/tasks/] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/examples/tasks/)):
 ```
@@ -146,7 +146,7 @@ Create a task manifest file to use snap-plugin-collector-cinder plugin (exemplar
 ```
 Create a task:
 ```
-$ $SNAP_PATH/snapctl task create -t examples/tasks/task.json
+$ $SNAP_PATH/snaptel task create -t examples/tasks/task.json
 ```
 
 ### Roadmap
