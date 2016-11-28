@@ -80,23 +80,17 @@ See example Global Config in [examples/cfg/] (https://github.com/intelsdi-x/snap
 ### Examples
 Example running snap-plugin-collector-cinder plugin and writing data to a file.
 
-Make sure that your `$SNAP_PATH` is set, if not:
-```
-$ export SNAP_PATH=$GOPATH/src/github.com/intelsdi-x/snap/build/linux/x86_64
-```
-Other paths to files should be set according to your configuration, using a file you should indicate where it is located.
-
 Create Global Config, see example in [examples/cfg/] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/examples/cfg/).
 
 In one terminal window, open the Snap daemon (in this case with logging set to 1,  trust disabled and global configuration saved in cfg.json):
 ```
-$ $SNAP_PATH/snapteld -l 1 -t 0 --config examples/cfg/cfg.json
+$ snapteld -l 1 -t 0 --config examples/cfg/cfg.json
 ```
 In another terminal window:
 
 Load snap-plugin-collector-cinder plugin:
 ```
-$ $SNAP_PATH/snaptel plugin load build/linux/x86_64/snap-plugin-collector-cinder
+$ snaptel plugin load build/linux/x86_64/snap-plugin-collector-cinder
 ```
 Download desired publisher plugin eg.
 ```
@@ -104,11 +98,11 @@ $ wget http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-file/lates
 ```
 Load file plugin for publishing:
 ```
-$ $SNAP_PATH/snaptel plugin load snap-plugin-publisher-file
+$ snaptel plugin load snap-plugin-publisher-file
 ```
 See available metrics for your system:
 ```
-$ $SNAP_PATH/snaptel metric list
+$ snaptel metric list
 ```
 Create a task manifest file to use snap-plugin-collector-cinder plugin (exemplary file in [examples/tasks/] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/examples/tasks/)):
 ```
@@ -146,7 +140,7 @@ Create a task manifest file to use snap-plugin-collector-cinder plugin (exemplar
 ```
 Create a task:
 ```
-$ $SNAP_PATH/snaptel task create -t examples/tasks/task.json
+$ snaptel task create -t examples/tasks/task.json
 ```
 
 ### Roadmap
