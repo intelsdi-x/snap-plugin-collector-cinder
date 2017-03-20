@@ -175,8 +175,3 @@
       of your accepting any such warranty or additional liability.
 
    END OF TERMS AND CONDITIONS
-
-
-This product contains code from Rackspace GopherCloud, which is available
-under an Apache License 2.0. For details, see openstack/v2/snapshots/requests.go, openstack/v2/snapshots/results.go,
-openstack/v2/volumes/requests.go, openstack/v2/volumes/results.go
