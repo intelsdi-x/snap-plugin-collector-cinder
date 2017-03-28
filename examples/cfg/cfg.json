@@ -1,17 +1,17 @@
 {
-  "control": {},
-  "scheduler": {},
-  "plugins": {
-    "collector": {
-      "cinder": {
-        "all": {
-          "endpoint": "https://public.fuel.local:5000",
-          "user": "admin",
-          "password": "admin"
+  "control": {
+    "plugins": {
+      "collector": {
+        "cinder": {
+          "all": {
+            "endpoint": "http://localhost:5000/v2.0",
+            "user": "admin",
+            "password": "admin"
+          }
         }
-      }
-    },
-    "publisher": {},
-    "processor": {}
+      },
+      "publisher": {},
+      "processor": {}
+    }
   }
 }

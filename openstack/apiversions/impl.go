@@ -17,6 +17,7 @@ limitations under the License.
 package apiversions
 
 import (
+	"net/http"
 	"net/url"
 
 	"github.com/rackspace/gophercloud"
@@ -24,15 +25,16 @@ import (
 	"github.com/rackspace/gophercloud/pagination"
 )
 
-// Exactly the same as original, but kept here to achieve proper call to modified listURL() until PR is merged
-func List(c *gophercloud.ServiceClient) pagination.Pager {
-	return pagination.NewPager(c, listURL(c), func(r pagination.PageResult) pagination.Page {
-		return apiversions.APIVersionPage{pagination.SinglePageBase(r)}
-	})
-}
-
-func listURL(c *gophercloud.ServiceClient) string {
+// According to official documentation it's not paged
+func Get(c *gophercloud.ServiceClient) apiversions.APIVersionPage {
 	u, _ := url.Parse(c.ServiceURL(""))
 	u.Path = "/"
-	return u.String()
+
+	res := gophercloud.Result{Body: map[string]interface{}{}}
+	var resp *http.Response
+	resp, res.Err = c.Get(u.String(), &res.Body, &gophercloud.RequestOpts{OkCodes: []int{200, 300}})
+	if res.Err == nil {
+		res.Header = resp.Header
+	}
+	return apiversions.APIVersionPage{pagination.SinglePageBase{Result: res, URL: *u}}
 }
