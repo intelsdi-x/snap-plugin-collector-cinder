@@ -85,9 +85,8 @@ func (c Common) GetApiVersions(provider *gophercloud.ProviderClient) ([]string, 
 		return apis, err
 	}
 
-	pager := apiversionsintel.List(client)
-	page, err := pager.AllPages()
-	if err != nil {
+	page := apiversionsintel.Get(client)
+	if page.Err != nil {
 		fmt.Println("err ", err)
 		return apis, err
 	}
