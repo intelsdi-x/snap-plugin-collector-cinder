@@ -1,0 +1,15 @@
+---
+  control:
+    plugins:
+      collector:
+        cinder:
+          all:
+            # url to keystone endpoint
+            # make sure that endpoint has correct protocol
+            endpoint: "http://localhost:5000/v2.0"
+            # tenant name
+            user: "admin"
+            # password tenant, on devstack for admin tenant default password is "secret"
+            password: "admin"
+      publisher: {}
+      processor: {}

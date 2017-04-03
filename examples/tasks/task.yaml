@@ -1,0 +1,20 @@
+---
+version: 1
+schedule:
+  type: simple
+  interval: 60s
+workflow:
+  collect:
+    metrics:
+      "/intel/openstack/cinder/admin/limits/MaxTotalVolumeGigabytes": {}
+      "/intel/openstack/cinder/admin/volumes/count": {}
+      "/intel/openstack/cinder/admin/volumes/bytes": {}
+      "/intel/openstack/cinder/admin/snapshots/count": {}
+      "/intel/openstack/cinder/admin/snapshots/bytes": {}
+    config:
+      "/intel/openstack/cinder":
+        tenant: admin
+    publish:
+    - plugin_name: file
+      config:
+        file: "/tmp/snap-cinder-file.log"
