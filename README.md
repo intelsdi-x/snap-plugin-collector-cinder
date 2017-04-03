@@ -73,7 +73,10 @@ Global configuration files are described in [Snap's documentation](https://githu
 - `"endpoint"` - URL for OpenStack Identity endpoint aka Keystone (ex. `"http://keystone.public.org:5000"`)
 - `"user"` -  user name which has access to OpenStack. It is highly prefer to provide user with administrative privileges. Otherwise returned metrics may not be complete.
 - `"password"` -  user password 
-- `"tenant"` - name of project admin project. This parameter is optional for global config. It can be provided at later stage, in task manifest configuration section for metrics. 
+- `"tenant"` - name of project admin project. This parameter is optional for global config. It can be provided at later stage, in task manifest configuration section for metrics.
+ If you're using authentication API in v3 you need to set one of those two configuration options:
+- `"domain_name"` - domain name
+- `"domain_id"` - domain name
 
 See example Global Config in [examples/cfg/] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/examples/cfg/).
 

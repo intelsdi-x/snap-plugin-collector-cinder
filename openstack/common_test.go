@@ -57,7 +57,7 @@ func (s *CommonSuite) TestGetTenants() {
 	Convey("Given tenants are requested", s.T(), func() {
 		c := Common{}
 		Convey("When Gettenants is called", func() {
-			tenants, err := c.GetTenants(th.Endpoint(), "me", "secret")
+			tenants, err := c.GetTenants(th.Endpoint(), "me", "secret", "", "")
 
 			Convey("Then list of available tenats is returned", func() {
 				So(len(tenants), ShouldEqual, 2)
@@ -73,7 +73,7 @@ func (s *CommonSuite) TestGetAPI() {
 	Convey("Given api versions are requested", s.T(), func() {
 		c := Common{}
 		Convey("When GetAPIVersions is called", func() {
-			provider, err := Authenticate(th.Endpoint(), "me", "secret", "tenant")
+			provider, err := Authenticate(th.Endpoint(), "me", "secret", "tenant", "", "")
 			th.AssertNoErr(s.T(), err)
 			th.CheckEquals(s.T(), s.Token, provider.TokenID)
 
