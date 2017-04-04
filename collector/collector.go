@@ -37,7 +37,7 @@ import (
 
 const (
 	name    = "cinder"
-	version = 2
+	version = 3
 	plgtype = plugin.CollectorPluginType
 	vendor  = "intel"
 	fs      = "openstack"
@@ -273,6 +273,8 @@ type collector struct {
 
 func (c *collector) authenticate(cfg interface{}, tenant string) error {
 	if _, found := c.providers[tenant]; !found {
+		domain_name := ""
+		domain_id := ""
 		// get credentials and endpoint from configuration
 		items, err := config.GetConfigItems(cfg, "endpoint", "user", "password")
 		if err != nil {
@@ -282,8 +284,16 @@ func (c *collector) authenticate(cfg interface{}, tenant string) error {
 		endpoint := items["endpoint"].(string)
 		user := items["user"].(string)
 		password := items["password"].(string)
+		dom_name, _ := config.GetConfigItem(cfg, "domain_name")
+		dom_id, _ := config.GetConfigItem(cfg, "domain_id")
+		if dom_name != nil {
+			domain_name = dom_name.(string)
+		}
+		if dom_id != nil {
+			domain_id = dom_id.(string)
+		}
 
-		provider, err := openstackintel.Authenticate(endpoint, user, password, tenant)
+		provider, err := openstackintel.Authenticate(endpoint, user, password, tenant, domain_name, domain_id)
 		if err != nil {
 			return err
 		}
@@ -300,6 +310,8 @@ func (c *collector) authenticate(cfg interface{}, tenant string) error {
 
 func getTenants(cfg interface{}) (map[string]string, error) {
 	items, err := config.GetConfigItems(cfg, "endpoint", "user", "password")
+	domain_name := ""
+	domain_id := ""
 	if err != nil {
 		return nil, err
 	}
@@ -307,10 +319,18 @@ func getTenants(cfg interface{}) (map[string]string, error) {
 	endpoint := items["endpoint"].(string)
 	user := items["user"].(string)
 	password := items["password"].(string)
+	dom_name, _ := config.GetConfigItem(cfg, "domain_name")
+	dom_id, _ := config.GetConfigItem(cfg, "domain_id")
+	if dom_name != nil {
+		domain_name = dom_name.(string)
+	}
+	if dom_id != nil {
+		domain_id = dom_id.(string)
+	}
 
 	// retrieve list of all available tenants for provided endpoint, user and password
 	cmn := openstackintel.Common{}
-	allTenants, err := cmn.GetTenants(endpoint, user, password)
+	allTenants, err := cmn.GetTenants(endpoint, user, password, domain_name, domain_id)
 	if err != nil {
 		return nil, err
 	}

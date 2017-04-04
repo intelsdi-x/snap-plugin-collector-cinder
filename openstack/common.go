@@ -35,7 +35,7 @@ var apiPriority = map[string]int{
 
 // Commoner provides abstraction for shared functions mainly for mocking
 type Commoner interface {
-	GetTenants(endpoint, user, password string) (map[string]string, error)
+	GetTenants(endpoint, user, password, domain_name, domain_id string) (map[string]string, error)
 	GetApiVersions(provider *gophercloud.ProviderClient) ([]string, error)
 }
 
@@ -44,10 +44,10 @@ type Common struct{}
 
 // GetTenants is used to retrieve list of available tenant for authenticated user
 // List of tenants can then be used to authenticate user for each given tenant
-func (c Common) GetTenants(endpoint, user, password string) (map[string]string, error) {
+func (c Common) GetTenants(endpoint, user, password, domain_name, domain_id string) (map[string]string, error) {
 	tnts := map[string]string{}
 
-	provider, err := Authenticate(endpoint, user, password, "")
+	provider, err := Authenticate(endpoint, user, password, "", domain_name, domain_id)
 	if err != nil {
 		return nil, err
 	}
@@ -105,13 +105,19 @@ func (c Common) GetApiVersions(provider *gophercloud.ProviderClient) ([]string, 
 
 // Authenticate is used to authenticate user for given tenant. Request is send to provided Keystone endpoint
 // Returns authenticated provider client, which is used as a base for service clients.
-func Authenticate(endpoint, user, password, tenant string) (*gophercloud.ProviderClient, error) {
+func Authenticate(endpoint, user, password, tenant, domain_name, domain_id string) (*gophercloud.ProviderClient, error) {
 	authOpts := gophercloud.AuthOptions{
 		IdentityEndpoint: endpoint,
 		Username:         user,
 		Password:         password,
 		TenantName:       tenant,
 		AllowReauth:      true,
+	}
+	if domain_name != "" && domain_id == "" {
+		authOpts.DomainName = domain_name
+	}
+	if domain_id != "" && domain_name == "" {
+		authOpts.DomainID = domain_id
 	}
 
 	provider, err := openstack.AuthenticatedClient(authOpts)

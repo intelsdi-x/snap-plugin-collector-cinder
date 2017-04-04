@@ -72,7 +72,7 @@ func (s *CinderV2Suite) TestGetLimits() {
 	Convey("Given Cinder absolute limits are requested", s.T(), func() {
 
 		Convey("When authentication is required", func() {
-			provider, err := openstackintel.Authenticate(th.Endpoint(), "me", "secret", "tenant")
+			provider, err := openstackintel.Authenticate(th.Endpoint(), "me", "secret", "tenant", "", "")
 			th.AssertNoErr(s.T(), err)
 			th.CheckEquals(s.T(), s.Token, provider.TokenID)
 
@@ -97,7 +97,7 @@ func (s *CinderV2Suite) TestGetVolumes() {
 	Convey("Given Cinder volumes are requested", s.T(), func() {
 
 		Convey("When authentication is required", func() {
-			provider, err := openstackintel.Authenticate(th.Endpoint(), "me", "secret", "tenant")
+			provider, err := openstackintel.Authenticate(th.Endpoint(), "me", "secret", "tenant", "", "")
 			th.AssertNoErr(s.T(), err)
 			th.CheckEquals(s.T(), s.Token, provider.TokenID)
 
@@ -125,7 +125,7 @@ func (s *CinderV2Suite) TestGetSnapshots() {
 	Convey("Given Cinder snapshots are requested", s.T(), func() {
 
 		Convey("When authentication is required", func() {
-			provider, err := openstackintel.Authenticate(th.Endpoint(), "me", "secret", "tenant")
+			provider, err := openstackintel.Authenticate(th.Endpoint(), "me", "secret", "tenant", "", "")
 			th.AssertNoErr(s.T(), err)
 			th.CheckEquals(s.T(), s.Token, provider.TokenID)
 
