@@ -85,9 +85,9 @@ Example running snap-plugin-collector-cinder plugin and writing data to a file.
 
 Create Global Config, see example in [examples/cfg/] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/examples/cfg/).
 
-In one terminal window, open the Snap daemon (in this case with logging set to 1,  trust disabled and global configuration saved in cfg.json):
+In one terminal window, open the Snap daemon (in this case with logging set to 1,  trust disabled and global configuration saved in cfg.yaml):
 ```
-$ snapteld -l 1 -t 0 --config examples/cfg/cfg.json
+$ snapteld -l 1 -t 0 --config examples/cfg/cfg.yaml
 ```
 In another terminal window:
 
@@ -109,41 +109,30 @@ $ snaptel metric list
 ```
 Create a task manifest file to use snap-plugin-collector-cinder plugin (exemplary file in [examples/tasks/] (https://github.com/intelsdi-x/snap-plugin-collector-cinder/blob/master/examples/tasks/)):
 ```
-{
-    "version": 1,
-    "schedule": {
-        "type": "simple",
-        "interval": "60s"
-    },
-    "workflow": {
-        "collect": {
-            "metrics": {
-		        "/intel/openstack/cinder/admin/limits/MaxTotalVolumeGigabytes": {},
-		        "/intel/openstack/cinder/admin/volumes/count": {},
-		        "/intel/openstack/cinder/admin/volumes/bytes": {},
-		        "/intel/openstack/cinder/admin/snapshots/count": {},
-		        "/intel/openstack/cinder/admin/snapshots/bytes": {}
-           },
-            "config": {
-                "/intel/openstack/cinder": {
-                    "tenant": "admin"
-                }
-            },
-            "publish": [
-                {
-                    "plugin_name": "file",
-                    "config": {
-                        "file": "/tmp/snap-cinder-file.log"
-                    }
-                }
-            ]
-        }
-    }
-}
+---
+version: 1
+schedule:
+  type: simple
+  interval: 60s
+workflow:
+  collect:
+    metrics:
+      "/intel/openstack/cinder/admin/limits/MaxTotalVolumeGigabytes": {}
+      "/intel/openstack/cinder/admin/volumes/count": {}
+      "/intel/openstack/cinder/admin/volumes/bytes": {}
+      "/intel/openstack/cinder/admin/snapshots/count": {}
+      "/intel/openstack/cinder/admin/snapshots/bytes": {}
+    config:
+      "/intel/openstack/cinder":
+        tenant: admin
+    publish:
+    - plugin_name: file
+      config:
+        file: "/tmp/snap-cinder-file.log"
 ```
 Create a task:
 ```
-$ snaptel task create -t examples/tasks/task.json
+$ snaptel task create -t examples/tasks/task.yaml
 ```
 
 ### Roadmap
